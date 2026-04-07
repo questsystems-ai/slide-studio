@@ -1,0 +1,2277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>slide-studio — Workshop</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:        #0a0b0d;
+  --surface:   #13141a;
+  --border:    rgba(255,255,255,0.08);
+  --text:      #e2e3e5;
+  --muted:     #60646d;
+  --blue:      #0c8de9;
+  --indigo:    #818cf8;
+  --green:     #34d399;
+  --red:       #f87171;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── LOGIN SCREEN ───────────────────────────────────────────────────── */
+#login-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+#login-screen.hidden { display: none; }
+
+#login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#login-logo {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+#login-tagline {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: -8px;
+  margin-bottom: 6px;
+}
+#login-card input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+#login-card input:focus { border-color: var(--blue); }
+#login-card input::placeholder { color: var(--muted); }
+.login-actions { display: flex; gap: 8px; }
+.login-actions button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+#btn-signin {
+  background: linear-gradient(135deg, rgba(12,141,233,0.25), rgba(129,140,248,0.25));
+  color: #a5b4fc;
+  border-color: rgba(129,140,248,0.35) !important;
+}
+#btn-signin:hover { background: linear-gradient(135deg, rgba(12,141,233,0.4), rgba(129,140,248,0.4)); }
+#btn-signup {
+  background: transparent;
+  color: var(--muted);
+}
+#btn-signup:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
+#login-msg {
+  font-size: 12px;
+  color: var(--red);
+  min-height: 16px;
+  text-align: center;
+}
+#login-msg.ok { color: var(--green); }
+
+/* ── WORKSHOP ───────────────────────────────────────────────────────── */
+#workshop {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+#workshop.hidden { display: none; }
+
+/* ── TOP BAR ────────────────────────────────────────────────────────── */
+#topbar {
+  height: 48px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 8px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+#brand {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.topbar-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 4px;
+}
+.tb-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  color: #9ca3af;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.tb-btn:hover { background: rgba(255,255,255,0.11); color: var(--text); }
+.tb-btn.primary {
+  background: linear-gradient(135deg, rgba(12,141,233,0.2), rgba(129,140,248,0.2));
+  border-color: rgba(129,140,248,0.3);
+  color: #a5b4fc;
+}
+.tb-btn.primary:hover {
+  background: linear-gradient(135deg, rgba(12,141,233,0.35), rgba(129,140,248,0.35));
+  color: #c4b5fd;
+}
+.tb-btn:disabled { opacity: 0.35; cursor: default; }
+
+/* Open project dropdown */
+#open-project-wrapper { position: relative; }
+#project-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #1a1b23;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  min-width: 200px;
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 200;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  padding: 4px;
+}
+#project-dropdown.hidden { display: none; }
+.proj-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.proj-item:hover { background: rgba(255,255,255,0.07); }
+.proj-item .proj-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.proj-item .proj-date { font-size: 11px; color: var(--muted); margin-left: auto; }
+.proj-empty { padding: 14px 12px; font-size: 13px; color: var(--muted); text-align: center; }
+
+/* Topbar spacer */
+#topbar-spacer { flex: 1; }
+
+/* User chip */
+#user-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+#user-chip:hover { background: rgba(255,255,255,0.06); border-color: var(--border); }
+#user-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
+#user-email { font-size: 12px; color: var(--muted); }
+#user-menu {
+  position: absolute;
+  top: 48px;
+  right: 16px;
+  background: #1a1b23;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  z-index: 200;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  padding: 4px;
+  min-width: 160px;
+}
+#user-menu.hidden { display: none; }
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 9px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #9ca3af;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 7px;
+  transition: all 0.1s;
+}
+.menu-item:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+.menu-item.danger:hover { background: rgba(248,113,113,0.1); color: var(--red); }
+
+/* ── WORKSPACE ──────────────────────────────────────────────────────── */
+#workspace {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  position: relative;
+}
+
+/* Empty state */
+#empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--muted);
+}
+#empty-state.hidden { display: none; }
+#empty-state .empty-icon { font-size: 48px; opacity: 0.3; }
+#empty-state h2 { font-size: 18px; font-weight: 600; color: #4a4d55; }
+#empty-state p { font-size: 14px; color: #3a3d45; max-width: 320px; text-align: center; line-height: 1.6; }
+.empty-cta {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+}
+
+/* Project view */
+#project-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#project-view.hidden { display: none; }
+#project-header {
+  padding: 24px 32px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+#project-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+#project-meta { font-size: 12px; color: var(--muted); }
+#scenes-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.scene-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.scene-num {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--indigo);
+  width: 32px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.scene-body { flex: 1; }
+.scene-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.scene-narration {
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.55;
+}
+.scene-narration[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid var(--blue);
+  padding-bottom: 2px;
+  color: var(--text);
+}
+.scene-actions { display: flex; gap: 6px; margin-top: 10px; }
+.scene-btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.scene-btn:hover { background: rgba(255,255,255,0.09); color: var(--text); }
+.scene-btn.save { border-color: rgba(52,211,153,0.3); color: var(--green); }
+.scene-btn.save:hover { background: rgba(52,211,153,0.1); }
+
+/* ── INTAKE FLOW ────────────────────────────────────────────────────── */
+#project-intake {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  overflow-y: auto;
+}
+#project-intake.hidden { display: none; }
+
+.intake-card {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.intake-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.intake-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: -10px;
+  line-height: 1.6;
+}
+#intent-input {
+  width: 100%;
+  min-height: 140px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+#intent-input:focus { border-color: var(--blue); }
+#intent-input::placeholder { color: #3a3d45; }
+.intake-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.intake-btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.intake-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.intake-btn.primary {
+  background: linear-gradient(135deg,rgba(12,141,233,0.25),rgba(129,140,248,0.25));
+  border-color: rgba(129,140,248,0.4);
+  color: #a5b4fc;
+}
+.intake-btn.primary:hover {
+  background: linear-gradient(135deg,rgba(12,141,233,0.4),rgba(129,140,248,0.4));
+  color: #c4b5fd;
+}
+.intake-btn:disabled { opacity: 0.4; cursor: default; }
+
+#scope-proposed-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+#scope-proposed-summary {
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.6;
+  margin-top: -10px;
+}
+.scope-divider {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: -6px;
+}
+.scope-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 13px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  gap: 16px;
+}
+.scope-toggle-row:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
+.scope-toggle-row.active { border-color: rgba(129,140,248,0.4); background: rgba(129,140,248,0.06); }
+.scope-q-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+.scope-toggle {
+  flex-shrink: 0;
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.12);
+  position: relative;
+  transition: background 0.2s;
+}
+.scope-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #60646d;
+  transition: transform 0.2s, background 0.2s;
+}
+.scope-toggle-row.active .scope-toggle {
+  background: rgba(129,140,248,0.35);
+  border-color: rgba(129,140,248,0.5);
+}
+.scope-toggle-row.active .scope-toggle::after {
+  transform: translateX(16px);
+  background: #a5b4fc;
+}
+
+.intake-building {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 40px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.intake-spinner {
+  width: 28px; height: 28px;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: #818cf8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.intake-error { font-size: 12px; color: var(--red); min-height: 16px; }
+
+/* Script review */
+.script-slide {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.script-slide-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.script-slide-num { font-size: 11px; font-weight: 700; color: var(--indigo); letter-spacing: 0.06em; }
+.script-slide-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.script-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.script-textarea {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: #c8cad0;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.script-textarea:focus { border-color: var(--blue); }
+.script-textarea.audio { min-height: 72px; }
+.script-textarea.visuals { min-height: 54px; color: #818cf8; }
+
+/* ── NEW PROJECT MODAL ──────────────────────────────────────────────── */
+#new-project-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  backdrop-filter: blur(4px);
+}
+#new-project-modal.hidden { display: none; }
+.modal-card {
+  background: #1a1b23;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 32px;
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+.modal-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: -6px;
+}
+.modal-card input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.modal-card input:focus { border-color: var(--blue); }
+.modal-card input::placeholder { color: var(--muted); }
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.modal-actions button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+#modal-cancel {
+  background: transparent;
+  color: var(--muted);
+}
+#modal-cancel:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
+#modal-create {
+  background: linear-gradient(135deg, rgba(12,141,233,0.25), rgba(129,140,248,0.25));
+  border-color: rgba(129,140,248,0.4);
+  color: #a5b4fc;
+}
+#modal-create:hover {
+  background: linear-gradient(135deg, rgba(12,141,233,0.4), rgba(129,140,248,0.4));
+  color: #c4b5fd;
+}
+#modal-error {
+  font-size: 12px;
+  color: var(--red);
+  min-height: 14px;
+}
+
+/* ── AGENT PANEL ────────────────────────────────────────────────────── */
+/* Reuses index.html aesthetic */
+#btn-agent-bar {
+  position: relative;
+}
+#agent-panel {
+  position: fixed;
+  top: 54px;
+  right: 16px;
+  width: 380px;
+  height: calc(100vh - 70px);
+  background: #111218;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+  animation: agent-drop-in 0.18s cubic-bezier(0.34,1.3,0.64,1) forwards;
+}
+#agent-panel.open { display: flex; }
+@keyframes agent-drop-in {
+  from { opacity: 0; transform: scale(0.92) translateY(-8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+#agent-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+#agent-avatar { font-size: 22px; }
+#agent-header-name { font-size: 14px; font-weight: 700; }
+#agent-header-sub { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; margin-top: 2px; }
+#agent-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 5px;
+  transition: all 0.1s;
+}
+#agent-close:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+#agent-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.agent-msg {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+.agent-msg-avatar { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+.agent-msg-bubble {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px 12px 12px 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #c8cad0;
+  max-width: 310px;
+}
+.agent-msg-bubble strong { color: var(--blue); }
+.agent-msg-bubble a { color: #38bdf8; }
+#agent-input-area {
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+#agent-input {
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  resize: none;
+  max-height: 120px;
+  transition: border-color 0.15s;
+}
+#agent-input:focus { border-color: var(--blue); }
+#agent-input::placeholder { color: #3a3d45; }
+#agent-send {
+  background: linear-gradient(135deg, rgba(12,141,233,0.3), rgba(129,140,248,0.3));
+  border: 1px solid rgba(129,140,248,0.35);
+  color: #a5b4fc;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+#agent-send:hover {
+  background: linear-gradient(135deg, rgba(12,141,233,0.45), rgba(129,140,248,0.45));
+  color: #c4b5fd;
+}
+
+/* ── IMAGE PANEL ────────────────────────────────────────────────────── */
+#image-panel {
+  position: fixed;
+  top: 54px;
+  right: 16px;
+  width: 320px;
+  max-height: calc(100vh - 70px);
+  background: #111218;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+  animation: agent-drop-in 0.18s cubic-bezier(0.34,1.3,0.64,1) forwards;
+}
+#image-panel.open { display: flex; }
+#image-panel-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+#image-panel-header span { font-size: 14px; font-weight: 700; flex: 1; }
+#image-panel-close {
+  background: none; border: none; color: var(--muted);
+  font-size: 16px; cursor: pointer; padding: 4px 6px;
+  border-radius: 5px; transition: all 0.1s;
+}
+#image-panel-close:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+#image-drop-zone {
+  margin: 12px;
+  border: 2px dashed rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+#image-drop-zone:hover, #image-drop-zone.drag-over {
+  border-color: rgba(129,140,248,0.5);
+  background: rgba(129,140,248,0.05);
+}
+#image-drop-zone .drop-icon { font-size: 24px; margin-bottom: 6px; }
+#image-drop-zone p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+#image-drop-zone strong { color: #a5b4fc; }
+#image-file-input { display: none; }
+#image-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-content: start;
+}
+.image-thumb {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  aspect-ratio: 4/3;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.image-thumb:hover { border-color: rgba(129,140,248,0.4); }
+.image-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.image-thumb-name {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,0.7);
+  font-size: 10px; color: #9ca3af;
+  padding: 4px 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#image-empty {
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 24px 0;
+  font-size: 13px;
+  color: #3a3d45;
+}
+#image-upload-status {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--green);
+  text-align: center;
+  min-height: 28px;
+  flex-shrink: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ──────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div id="login-card">
+    <div id="login-logo">🎬 slide-studio</div>
+    <div id="login-tagline">The Workshop — sign in to continue</div>
+    <input id="login-email" type="email" placeholder="Email" autocomplete="email" />
+    <input id="login-password" type="password" placeholder="Password" autocomplete="current-password" />
+    <div class="login-actions">
+      <button id="btn-signin" onclick="signIn()">Sign in</button>
+      <button id="btn-signup" onclick="signUp()">Create account</button>
+    </div>
+    <div id="login-msg"></div>
+  </div>
+</div>
+
+<!-- ── WORKSPACE SETUP SCREEN ───────────────────────────────────────── -->
+<div id="workspace-setup" class="hidden" style="
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;z-index:900;">
+  <div style="
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:16px;padding:40px;width:440px;
+    display:flex;flex-direction:column;gap:16px;">
+    <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;">📁 Choose your workspace</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+      Your workspace is a folder on your computer that holds all your presentations.
+      Create a new folder anywhere you like — Documents, Desktop, a project drive — then select it here.<br><br>
+      You only do this once. slide-studio will remember it.
+    </div>
+    <button id="btn-pick-folder" onclick="pickFolder()" style="
+      background:linear-gradient(135deg,rgba(12,141,233,0.2),rgba(129,140,248,0.2));
+      border:1px solid rgba(129,140,248,0.35);border-radius:10px;
+      color:#a5b4fc;font-family:inherit;font-size:15px;font-weight:700;
+      padding:14px;cursor:pointer;transition:all 0.15s;">
+      📂 Browse for folder…
+    </button>
+    <div id="picked-path" style="
+      display:none;
+      background:rgba(255,255,255,0.04);border:1px solid var(--border);
+      border-radius:8px;padding:12px 14px;
+      font-size:12px;font-family:'Courier New',monospace;color:#9ca3af;
+      word-break:break-all;"></div>
+    <button id="btn-confirm-workspace" onclick="confirmWorkspace()" style="
+      display:none;
+      background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(12,141,233,0.2));
+      border:1px solid rgba(52,211,153,0.35);border-radius:10px;
+      color:var(--green);font-family:inherit;font-size:14px;font-weight:700;
+      padding:12px;cursor:pointer;transition:all 0.15s;">
+      ✓ Use this folder →
+    </button>
+    <div id="workspace-error" style="font-size:12px;color:var(--red);min-height:14px;"></div>
+  </div>
+</div>
+
+<!-- ── WORKSHOP ──────────────────────────────────────────────────────── -->
+<div id="workshop" class="hidden">
+
+  <!-- Top bar -->
+  <div id="topbar">
+    <span id="brand">🎬 slide-studio</span>
+    <div class="topbar-sep"></div>
+
+    <button class="tb-btn primary" onclick="openNewProjectModal()">+ New Project</button>
+
+    <div id="open-project-wrapper">
+      <button class="tb-btn" id="btn-open" onclick="toggleProjectDropdown()">Open ▾</button>
+      <div id="project-dropdown" class="hidden"></div>
+    </div>
+
+    <div class="topbar-sep"></div>
+
+    <button class="tb-btn" id="btn-edit" onclick="toggleEditMode()">Edit</button>
+    <button class="tb-btn" id="btn-images" onclick="toggleImagePanel()">Images</button>
+    <button class="tb-btn" id="btn-agent-bar" onclick="toggleAgent()">
+      <span id="agent-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;vertical-align:middle;"></span>
+      Agent Assist
+    </button>
+
+    <div id="topbar-spacer"></div>
+
+    <div id="user-chip" onclick="toggleUserMenu()">
+      <div id="user-dot"></div>
+      <span id="user-email">–</span>
+    </div>
+    <div id="user-menu" class="hidden">
+      <button class="menu-item danger" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- Workspace -->
+  <div id="workspace">
+
+    <!-- Empty state -->
+    <div id="empty-state">
+      <div class="empty-icon">🎬</div>
+      <h2>No project open</h2>
+      <p>Create a new project or open a saved one to start building.</p>
+      <div class="empty-cta">
+        <button class="tb-btn primary" onclick="openNewProjectModal()">+ New Project</button>
+        <button class="tb-btn" onclick="toggleProjectDropdown()">Open ▾</button>
+      </div>
+    </div>
+
+    <!-- Project view (once a project is loaded) -->
+    <div id="project-view" class="hidden">
+      <div id="project-header">
+        <div id="project-title"></div>
+        <div id="project-meta"></div>
+      </div>
+      <!-- Intake flow — shown when project has no scenes -->
+      <div id="project-intake" class="hidden">
+
+        <!-- Step 1: intent -->
+        <div id="intake-step-1" class="intake-card">
+          <div class="intake-label">What do you want to present?</div>
+          <div class="intake-sub">One sentence is enough. Paste an outline or just describe the idea.</div>
+          <textarea id="intent-input"
+            placeholder="e.g. A quick high-level slide-video explainer on &quot;PCR: The Polymerase Chain Reaction,&quot; assuming undergrad level biochemistry familiarity."
+            onkeydown="if(event.key==='Enter'&&event.metaKey) submitIntent()"></textarea>
+          <div class="intake-actions">
+            <button class="intake-btn primary" id="btn-scope" onclick="submitIntent()">Scope it →</button>
+          </div>
+          <div class="intake-error" id="intent-error"></div>
+        </div>
+
+        <!-- Step 2: scoping questions -->
+        <div id="intake-step-2" class="intake-card" style="display:none;">
+          <div id="scope-proposed-title"></div>
+          <div id="scope-proposed-summary"></div>
+          <div class="scope-divider">Scope</div>
+          <div id="scope-questions-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+          <div class="intake-actions">
+            <button class="intake-btn" onclick="resetIntake()">← Back</button>
+            <button class="intake-btn primary" id="btn-build" onclick="buildPresentation()">Build presentation →</button>
+          </div>
+          <div class="intake-error" id="scope-error"></div>
+        </div>
+
+        <!-- Step 3: story paragraph + proposed slide list -->
+        <div id="intake-step-3" class="intake-card" style="display:none;">
+          <div class="intake-label" style="font-size:15px;">Story</div>
+          <div id="story-paragraph" style="
+            font-size:13px;color:#9ca3af;line-height:1.75;
+            background:rgba(255,255,255,0.03);border:1px solid var(--border);
+            border-radius:8px;padding:14px 16px;"></div>
+          <div class="scope-divider">Proposed slides</div>
+          <div id="story-slide-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <!-- Inline chat for refinement -->
+          <div style="display:flex;gap:8px;margin-top:4px;">
+            <input id="story-chat-input" type="text"
+              style="flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"
+              placeholder="Drop slide 3 · Compress 4–5 into one · Make it 8 slides…"
+              onkeydown="if(event.key==='Enter') refineStory()" />
+            <button class="intake-btn" onclick="refineStory()">Revise</button>
+          </div>
+          <div id="story-chat-reply" style="font-size:13px;color:#9ca3af;line-height:1.6;min-height:0;display:none;
+            background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px 14px;"></div>
+          <div class="intake-actions">
+            <button class="intake-btn" onclick="modalStoryBack()">← Back</button>
+            <button class="intake-btn" id="btn-assess" onclick="assessStory()"
+              style="border-color:rgba(52,211,153,0.3);color:var(--green);">Assess this →</button>
+            <button class="intake-btn primary" id="btn-build" onclick="buildPresentation()">Write script →</button>
+          </div>
+          <div class="intake-error" id="story-error"></div>
+        </div>
+
+        <!-- Step 4: script review (Audio + Visuals per slide, editable) -->
+        <div id="intake-step-4" class="intake-card" style="display:none;">
+          <div class="intake-label">Script</div>
+          <div class="intake-sub">Review and edit before building. Audio is the narration. Visuals is what gets generated.</div>
+          <div id="script-slides-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+          <div class="intake-actions">
+            <button class="intake-btn" onclick="modalScriptBack()">← Back</button>
+            <button class="intake-btn primary" id="btn-accept" onclick="acceptScript()">Accept &amp; build →</button>
+          </div>
+          <div class="intake-error" id="script-error"></div>
+        </div>
+
+        <!-- Step 5: building spinner -->
+        <div id="intake-step-5" class="intake-card" style="display:none;align-items:center;">
+          <div class="intake-building">
+            <div class="intake-spinner"></div>
+            <div id="building-msg">Building your presentation…</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="scenes-area" class="hidden"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── NEW PROJECT MODAL ─────────────────────────────────────────────── -->
+<div id="new-project-modal" class="hidden">
+  <div class="modal-card">
+
+    <!-- Step 1: name -->
+    <div id="modal-step-1">
+      <div class="modal-title">New Project</div>
+      <div class="modal-desc">What's your presentation called?</div>
+      <input id="new-project-name" type="text" placeholder="e.g. PCR Explainer"
+             onkeydown="if(event.key==='Enter') modalNext()"
+             oninput="updateSlugPreview()" />
+      <div id="slug-preview" style="font-size:11px;color:var(--muted);margin-top:-6px;min-height:16px;"></div>
+      <div class="modal-actions">
+        <button id="modal-cancel" onclick="closeNewProjectModal()">Cancel</button>
+        <button id="modal-next" onclick="modalNext()">Next →</button>
+      </div>
+      <div id="modal-error"></div>
+    </div>
+
+    <!-- Step 2: confirm folder -->
+    <div id="modal-step-2" style="display:none;">
+      <div class="modal-title">Create folder</div>
+      <div class="modal-desc">This folder will be created inside your workspace:</div>
+      <div id="folder-preview" style="
+        background:rgba(255,255,255,0.04);
+        border:1px solid var(--border);
+        border-radius:8px;
+        padding:14px 16px;
+        font-size:12px;
+        line-height:1.9;
+        color:#9ca3af;
+        font-family:'Courier New',monospace;
+      "></div>
+      <div class="modal-actions">
+        <button id="modal-back" onclick="modalBack()">← Back</button>
+        <button id="modal-create" onclick="createProject()">Create folder →</button>
+      </div>
+      <div id="modal-error-2"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── AGENT PANEL ───────────────────────────────────────────────────── -->
+<div id="agent-panel">
+  <div id="agent-header">
+    <div id="agent-avatar">🤖</div>
+    <div>
+      <div id="agent-header-name">Presentation Agent</div>
+      <div id="agent-header-sub">POWERED BY CLAUDE · SLIDE-STUDIO</div>
+    </div>
+    <button id="agent-close" onclick="toggleAgent()">✕</button>
+  </div>
+  <div id="agent-messages">
+    <div class="agent-msg">
+      <div class="agent-msg-avatar">🤖</div>
+      <div class="agent-msg-bubble">
+        Hey! Tell me what presentation you want to build and I'll spec it out for you.<br><br>
+        Try: <strong>"Build me a PCR explainer — 6 slides, general science audience"</strong>
+      </div>
+    </div>
+  </div>
+  <div id="agent-input-area">
+    <textarea id="agent-input" placeholder="Describe the presentation you want…" rows="1"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAgent();}
+                         this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+    <button id="agent-send" onclick="sendAgent()">Send</button>
+  </div>
+</div>
+
+<!-- ── IMAGE PANEL ──────────────────────────────────────────────────── -->
+<div id="image-panel">
+  <div id="image-panel-header">
+    <span>🖼 Images</span>
+    <button id="image-panel-close" onclick="toggleImagePanel()">✕</button>
+  </div>
+  <div id="image-drop-zone"
+       onclick="document.getElementById('image-file-input').click()"
+       ondragover="event.preventDefault(); this.classList.add('drag-over')"
+       ondragleave="this.classList.remove('drag-over')"
+       ondrop="handleImageDrop(event)">
+    <div class="drop-icon">📁</div>
+    <p><strong>Click to upload</strong> or drag &amp; drop<br>PNG, JPG, GIF, WebP, SVG</p>
+  </div>
+  <input type="file" id="image-file-input" accept="image/*" multiple
+         onchange="uploadImages(this.files)" />
+  <div id="image-upload-status"></div>
+  <div id="image-grid">
+    <div id="image-empty">No images yet</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── SUPABASE INIT ──────────────────────────────────────────────────────
+let _sb = null;
+let _currentUser = null;
+let _currentProject = null;
+let _editMode = false;
+let _workspaceDir = '';
+let _pickedPath = '';
+let _agentMemory = '';
+let _scopeSpec = null;       // pending scope proposal
+let _storySpec = null;       // pending story + slide list
+let _conversation = { messages: [], intent: '', stage: 'new', lastActive: '' };
+
+async function boot() {
+  let config;
+  try {
+    const resp = await fetch('/api/config');
+    config = await resp.json();
+  } catch(e) {
+    setLoginMsg('Cannot reach serve.py — is it running?', false);
+    return;
+  }
+
+  _workspaceDir = config.workspaceDir || '';
+
+  if (!config.supabaseUrl || !config.supabaseAnonKey) {
+    // No Supabase configured — bypass auth for local-only use
+    afterLogin({ email: 'local', id: 'local' });
+    return;
+  }
+
+  _sb = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) {
+    afterLogin(session.user);
+  } else {
+    showLogin();
+  }
+
+  _sb.auth.onAuthStateChange((_event, session) => {
+    if (session) afterLogin(session.user);
+    else         showLogin();
+  });
+}
+
+// Called after successful login — decides whether to show workspace setup or workshop
+function afterLogin(user) {
+  _currentUser = user;
+  document.getElementById('user-email').textContent =
+    user.email === 'local' ? 'local mode' : user.email;
+  if (_workspaceDir) {
+    showWorkshop();
+  } else {
+    showWorkspaceSetup();
+  }
+}
+
+// ── AUTH ───────────────────────────────────────────────────────────────
+function showLogin() {
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('workspace-setup').classList.add('hidden');
+  document.getElementById('workshop').classList.add('hidden');
+}
+
+function showWorkspaceSetup() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('workspace-setup').style.display = 'flex';
+  document.getElementById('workspace-setup').classList.remove('hidden');
+  document.getElementById('workshop').classList.add('hidden');
+}
+
+function showWorkshop() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('workspace-setup').classList.add('hidden');
+  document.getElementById('workspace-setup').style.display = 'none';
+  document.getElementById('workshop').classList.remove('hidden');
+  loadProjectList();
+  loadAgentMemory();
+}
+
+async function loadAgentMemory() {
+  try {
+    const resp = await fetch('/api/agent-memory');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    _agentMemory = data.content || '';
+  } catch(e) { /* silent */ }
+}
+
+async function loadConversation(slug) {
+  try {
+    const resp = await fetch(`/api/conversation/${slug}`);
+    if (!resp.ok) { _conversation = { messages: [], intent: '', stage: 'new', lastActive: '' }; return; }
+    _conversation = await resp.json();
+  } catch(e) {
+    _conversation = { messages: [], intent: '', stage: 'new', lastActive: '' };
+  }
+}
+
+async function saveConversation() {
+  if (!_currentProject) return;
+  _conversation.lastActive = new Date().toISOString();
+  try {
+    await fetch(`/api/conversation/${_currentProject.slug}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_conversation)
+    });
+  } catch(e) { /* silent */ }
+}
+
+// ── WORKSPACE PICKER ───────────────────────────────────────────────────
+async function pickFolder() {
+  const btn = document.getElementById('btn-pick-folder');
+  btn.textContent = '⏳ Opening folder picker…';
+  btn.disabled = true;
+  document.getElementById('workspace-error').textContent = '';
+  try {
+    const resp = await fetch('/api/choose-folder', { method: 'POST', headers: {'Content-Length': '0'} });
+    const data = await resp.json();
+    if (data.cancelled || !data.path) {
+      btn.textContent = '📂 Browse for folder…';
+      btn.disabled = false;
+      return;
+    }
+    _pickedPath = data.path;
+    document.getElementById('picked-path').textContent = data.path;
+    document.getElementById('picked-path').style.display = '';
+    document.getElementById('btn-confirm-workspace').style.display = '';
+  } catch(e) {
+    document.getElementById('workspace-error').textContent = 'Error: ' + e.message;
+  }
+  btn.textContent = '📂 Browse for folder…';
+  btn.disabled = false;
+}
+
+async function confirmWorkspace() {
+  if (!_pickedPath) return;
+  const btn = document.getElementById('btn-confirm-workspace');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const resp = await fetch('/api/set-workspace', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: _pickedPath })
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      document.getElementById('workspace-error').textContent = data.error || 'Failed to save workspace.';
+      btn.disabled = false;
+      btn.textContent = '✓ Use this folder →';
+      return;
+    }
+    _workspaceDir = data.workspaceDir;
+    showWorkshop();
+  } catch(e) {
+    document.getElementById('workspace-error').textContent = 'Error: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '✓ Use this folder →';
+  }
+}
+
+async function signIn() {
+  if (!_sb) { setLoginMsg('Supabase not configured', false); return; }
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  if (!email || !pass) { setLoginMsg('Enter email and password', false); return; }
+  setLoginMsg('Signing in…', true);
+  const { error } = await _sb.auth.signInWithPassword({ email, password: pass });
+  if (error) setLoginMsg(error.message, false);
+}
+
+async function signUp() {
+  if (!_sb) { setLoginMsg('Supabase not configured', false); return; }
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  if (!email || !pass) { setLoginMsg('Enter email and password', false); return; }
+  setLoginMsg('Creating account…', true);
+  const { error } = await _sb.auth.signUp({ email, password: pass });
+  if (error) setLoginMsg(error.message, false);
+  else setLoginMsg('Check your email to confirm, then sign in.', true);
+}
+
+async function signOut() {
+  if (_sb) await _sb.auth.signOut();
+  else showLogin();
+  closeUserMenu();
+}
+
+function setLoginMsg(msg, ok) {
+  const el = document.getElementById('login-msg');
+  el.textContent = msg;
+  el.className = ok ? 'ok' : '';
+}
+
+// ── PROJECT LIST ───────────────────────────────────────────────────────
+let _projects = [];
+
+async function loadProjectList() {
+  try {
+    const resp = await fetch('/api/projects');
+    _projects = await resp.json();
+    renderProjectDropdown();
+  } catch(e) {
+    console.warn('Could not load projects:', e);
+  }
+}
+
+function renderProjectDropdown() {
+  const dd = document.getElementById('project-dropdown');
+  if (_projects.length === 0) {
+    dd.innerHTML = '<div class="proj-empty">No projects yet</div>';
+    return;
+  }
+  dd.innerHTML = _projects.map(p => {
+    const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '';
+    return `<div class="proj-item" onclick="openProject('${p.slug}')">
+      <span class="proj-name">${p.name}</span>
+      <span class="proj-date">${date}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleProjectDropdown() {
+  const dd = document.getElementById('project-dropdown');
+  if (dd.classList.contains('hidden')) {
+    loadProjectList().then(() => dd.classList.remove('hidden'));
+    closeUserMenu();
+  } else {
+    dd.classList.add('hidden');
+  }
+}
+
+function closeProjectDropdown() {
+  document.getElementById('project-dropdown').classList.add('hidden');
+}
+
+async function openProject(slug) {
+  closeProjectDropdown();
+  const proj = _projects.find(p => p.slug === slug);
+  if (!proj) return;
+  loadProjectView(proj);
+}
+
+async function loadProjectView(proj) {
+  _currentProject = proj;
+  _images = [];
+  _scopeSpec = null;
+  _storySpec = null;
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('project-view').classList.remove('hidden');
+  document.getElementById('project-title').textContent = proj.name;
+  const date = proj.createdAt ? new Date(proj.createdAt).toLocaleDateString() : '';
+  document.getElementById('project-meta').textContent =
+    `${(proj.scenes || []).length} scenes${date ? ' · created ' + date : ''}`;
+
+  await loadConversation(proj.slug);
+  renderScenes(proj.scenes || []);
+
+  // If returning to a project with history, open agent panel and give briefing
+  if (_conversation.messages.length > 0 && (proj.scenes || []).length > 0) {
+    document.getElementById('agent-panel').classList.add('open');
+    _deliverBriefing();
+  }
+}
+
+function renderScenes(scenes) {
+  const intake = document.getElementById('project-intake');
+  const area   = document.getElementById('scenes-area');
+  if (!scenes || scenes.length === 0) {
+    intake.classList.remove('hidden');
+    area.classList.add('hidden');
+    resetIntake();
+    return;
+  }
+  intake.classList.add('hidden');
+  area.classList.remove('hidden');
+  area.innerHTML = '';
+  scenes.forEach((s, i) => {
+    const card = document.createElement('div');
+    card.className = 'scene-card';
+    card.innerHTML = `
+      <div class="scene-num">S${String(i+1).padStart(2,'0')}</div>
+      <div class="scene-body">
+        <div class="scene-title">${s.title || 'Untitled'}</div>
+        <div class="scene-narration" id="narr-${i}">${s.narrationHtml || s.narration || ''}</div>
+        <div class="scene-actions">
+          <button class="scene-btn" onclick="editScene(${i})">Edit narration</button>
+          <button class="scene-btn save" id="save-btn-${i}" style="display:none"
+                  onclick="saveScene(${i})">Save</button>
+        </div>
+      </div>`;
+    area.appendChild(card);
+  });
+}
+
+// ── INTAKE FLOW ────────────────────────────────────────────────────────
+function resetIntake() {
+  ['intake-step-1','intake-step-2','intake-step-3','intake-step-4','intake-step-5'].forEach((id,i) => {
+    document.getElementById(id).style.display = i === 0 ? '' : 'none';
+  });
+  document.getElementById('intent-error').textContent = '';
+  _scopeSpec = null;
+  _storySpec = null;
+}
+
+async function submitIntent() {
+  const text = document.getElementById('intent-input').value.trim();
+  if (!text) { document.getElementById('intent-error').textContent = 'Please describe your presentation.'; return; }
+
+  document.getElementById('btn-scope').disabled = true;
+  document.getElementById('btn-scope').textContent = 'Thinking…';
+  document.getElementById('intent-error').textContent = '';
+
+  const systemPrompt = `You are a presentation scoping assistant for slide-studio.
+Given a presentation intent, return ONLY a JSON object — no prose, no explanation:
+{
+  "title": "Proposed presentation title",
+  "summary": "One sentence describing what you will build",
+  "scope_questions": [
+    {"id": "string", "question": "Yes/no question affecting content or scope?", "default": true_or_false}
+  ]
+}
+Rules:
+- 3 to 5 questions maximum
+- Each question is a yes/no toggle
+- Questions should meaningfully change what gets built (history, depth, images, examples, etc.)
+- Return ONLY the JSON block — nothing else
+${_agentMemory ? '\n## Agent Memory\n' + _agentMemory : ''}`;
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: text }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const raw = data.content?.[0]?.text || '';
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON in response');
+    _scopeSpec = JSON.parse(match[0]);
+    renderScopeQuestions(_scopeSpec);
+  } catch(e) {
+    document.getElementById('intent-error').textContent = 'Error: ' + e.message;
+  }
+
+  document.getElementById('btn-scope').disabled = false;
+  document.getElementById('btn-scope').textContent = 'Scope it →';
+}
+
+function renderScopeQuestions(spec) {
+  document.getElementById('scope-proposed-title').textContent = spec.title || '';
+  document.getElementById('scope-proposed-summary').textContent = spec.summary || '';
+
+  const list = document.getElementById('scope-questions-list');
+  list.innerHTML = '';
+  (spec.scope_questions || []).forEach(q => {
+    const row = document.createElement('div');
+    row.className = 'scope-toggle-row' + (q.default ? ' active' : '');
+    row.dataset.id = q.id;
+    row.dataset.value = q.default ? 'true' : 'false';
+    row.innerHTML = `<span class="scope-q-text">${q.question}</span><div class="scope-toggle"></div>`;
+    row.onclick = () => {
+      const on = row.dataset.value !== 'true';
+      row.dataset.value = on ? 'true' : 'false';
+      row.classList.toggle('active', on);
+    };
+    list.appendChild(row);
+  });
+
+  // Update step 2 button to go to story step
+  document.getElementById('btn-build').textContent = 'Next →';
+  document.getElementById('btn-build').onclick = proceedToStory;
+  document.getElementById('intake-step-1').style.display = 'none';
+  document.getElementById('intake-step-2').style.display = '';
+}
+
+function _getScopeAnswers() {
+  const answers = {};
+  document.querySelectorAll('#scope-questions-list .scope-toggle-row').forEach(row => {
+    answers[row.dataset.id] = row.dataset.value === 'true';
+  });
+  return answers;
+}
+
+function _getScopeSummary() {
+  const answers = _getScopeAnswers();
+  return (_scopeSpec?.scope_questions || [])
+    .map(q => `- ${q.question} → ${answers[q.id] ? 'YES' : 'NO'}`)
+    .join('\n');
+}
+
+// After scoping: ask Claude for story paragraph + slide title list
+async function proceedToStory() {
+  const intent = document.getElementById('intent-input').value.trim();
+  const scopeSummary = _getScopeSummary();
+  const btn = document.getElementById('btn-build');
+  btn.disabled = true; btn.textContent = 'Thinking…';
+  document.getElementById('scope-error').textContent = '';
+
+  const systemPrompt = `You are a presentation architect for slide-studio.
+Given an intent and scope answers, return ONLY a JSON object:
+{
+  "title": "Presentation title",
+  "story": "A paragraph (3-5 sentences) describing the narrative arc — what story this presentation tells, why it flows in this order, what the audience will take away.",
+  "slides": [
+    {"number": 1, "title": "Slide Title", "summary": "One sentence describing this slide's content and purpose."}
+  ]
+}
+Return ONLY the JSON. No prose outside the JSON block.
+${_agentMemory ? '\n## Knowledge Base\n' + _agentMemory : ''}`;
+
+  try {
+    const userMsg = `Intent: ${intent}\n\nScope decisions:\n${scopeSummary}`;
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const raw = data.content?.[0]?.text || '';
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON in response');
+    _storySpec = JSON.parse(match[0]);
+
+    // Save to conversation
+    _conversation.intent = intent;
+    _conversation.stage = 'story';
+    _conversation.messages.push({ role: 'user', content: userMsg });
+    _conversation.messages.push({ role: 'assistant', content: raw });
+    saveConversation();
+
+    renderStoryStep(_storySpec);
+  } catch(e) {
+    document.getElementById('scope-error').textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Next →';
+}
+
+function renderStoryStep(spec) {
+  document.getElementById('story-paragraph').textContent = spec.story || '';
+  const list = document.getElementById('story-slide-list');
+  list.innerHTML = (spec.slides || []).map(s =>
+    `<div style="display:flex;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:7px;">
+      <span style="font-size:11px;font-weight:700;color:var(--indigo);width:22px;flex-shrink:0;padding-top:1px;">${s.number}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${s.title}</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:2px;line-height:1.5;">${s.summary}</div>
+      </div>
+    </div>`
+  ).join('');
+  document.getElementById('story-chat-reply').style.display = 'none';
+  document.getElementById('story-error').textContent = '';
+  document.getElementById('intake-step-2').style.display = 'none';
+  document.getElementById('intake-step-3').style.display = '';
+}
+
+function modalStoryBack() {
+  document.getElementById('intake-step-3').style.display = 'none';
+  document.getElementById('intake-step-2').style.display = '';
+}
+
+// Inline chat to refine the story/slide list
+async function refineStory() {
+  const input = document.getElementById('story-chat-input');
+  const msg = input.value.trim();
+  if (!msg || !_storySpec) return;
+  input.value = '';
+  const replyEl = document.getElementById('story-chat-reply');
+  replyEl.style.display = '';
+  replyEl.textContent = 'Revising…';
+
+  const currentList = (_storySpec.slides || []).map(s => `${s.number}. ${s.title} — ${s.summary}`).join('\n');
+  const systemPrompt = `You are a presentation architect. The user wants to revise the proposed slide structure. Return ONLY updated JSON in the same format: { "title": "...", "story": "...", "slides": [...] }. Apply the user's instruction precisely.${_agentMemory ? '\n\n## Knowledge Base\n' + _agentMemory : ''}`;
+  const userMsg = `Current structure:\n${currentList}\n\nRevision: ${msg}`;
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+    const data = await resp.json();
+    const raw = data.content?.[0]?.text || '';
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON in response');
+    _storySpec = JSON.parse(match[0]);
+    _conversation.messages.push({ role: 'user', content: userMsg });
+    _conversation.messages.push({ role: 'assistant', content: raw });
+    saveConversation();
+    renderStoryStep(_storySpec);
+  } catch(e) {
+    replyEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+// "Assess this" — honest critique of the proposed structure
+async function assessStory() {
+  if (!_storySpec) return;
+  const btn = document.getElementById('btn-assess');
+  btn.disabled = true; btn.textContent = 'Assessing…';
+  const replyEl = document.getElementById('story-chat-reply');
+  replyEl.style.display = '';
+  replyEl.textContent = 'Reviewing structure…';
+
+  const currentList = (_storySpec.slides || []).map(s => `${s.number}. ${s.title} — ${s.summary}`).join('\n');
+  const systemPrompt = `You are a presentation critic. Give an honest, direct assessment of this proposed slide structure. What's weak? What's missing? What would make it stronger? 3-5 sentences, specific and actionable. No flattery.${_agentMemory ? '\n\n## Knowledge Base\n' + _agentMemory : ''}`;
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: `Story: ${_storySpec.story}\n\nSlides:\n${currentList}` }]
+      })
+    });
+    const data = await resp.json();
+    const reply = data.content?.[0]?.text || '';
+    replyEl.innerHTML = reply.replace(/\n/g, '<br>');
+  } catch(e) {
+    replyEl.textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Assess this →';
+}
+
+// Step 3 → 4: write the full script (Audio + Visuals per slide)
+async function buildPresentation() {
+  if (!_storySpec) return;
+  const btn = document.getElementById('btn-build');
+  btn.disabled = true; btn.textContent = 'Writing script…';
+  document.getElementById('story-error').textContent = '';
+
+  const intent = document.getElementById('intent-input').value.trim();
+  const scopeSummary = _getScopeSummary();
+  const slideList = (_storySpec.slides || []).map(s => `${s.number}. ${s.title} — ${s.summary}`).join('\n');
+
+  const systemPrompt = `You are a presentation scriptwriter for slide-studio.
+Given an approved slide structure, write the full script.
+Return ONLY a JSON block:
+\`\`\`json
+{
+  "slides": [
+    {
+      "number": 1,
+      "title": "Slide Title",
+      "audio": "Narration — under 60 words, conversational, first person.",
+      "visuals": "Specific visual composition: layout, animated elements, colors, images needed.",
+      "minDuration": 12
+    }
+  ]
+}
+\`\`\`
+Rules:
+- audio: spoken narration only. Under 60 words. Conversational.
+- visuals: one paragraph describing what appears on screen. Be specific about layout, animation, color.
+- minDuration: estimate in seconds based on audio length (typically 8–60).
+${_agentMemory ? '\n## Knowledge Base\n' + _agentMemory : ''}`;
+
+  const userMsg = `Intent: ${intent}\nScope: ${scopeSummary}\n\nApproved structure:\n${slideList}`;
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [...(_conversation.messages.slice(-6)), { role: 'user', content: userMsg }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const raw = data.content?.[0]?.text || '';
+    const spec = _parseSlides(raw);
+    if (!spec?.slides) throw new Error('Could not parse script');
+
+    _conversation.messages.push({ role: 'user', content: userMsg });
+    _conversation.messages.push({ role: 'assistant', content: raw });
+    saveConversation();
+    renderScriptStep(spec.slides);
+  } catch(e) {
+    document.getElementById('story-error').textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Write script →';
+}
+
+function renderScriptStep(slides) {
+  const list = document.getElementById('script-slides-list');
+  list.innerHTML = '';
+  slides.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'script-slide';
+    div.innerHTML = `
+      <div class="script-slide-header">
+        <span class="script-slide-num">SLIDE ${s.number || i+1}</span>
+        <span class="script-slide-title">${s.title || ''}</span>
+      </div>
+      <div class="script-field-label">Audio</div>
+      <textarea class="script-textarea audio" id="audio-${i}">${s.audio || s.narration || ''}</textarea>
+      <div class="script-field-label">Visuals</div>
+      <textarea class="script-textarea visuals" id="visuals-${i}">${s.visuals || s.visualDescription || ''}</textarea>`;
+    list.appendChild(div);
+  });
+  // Store slide count for acceptScript
+  list.dataset.count = slides.length;
+  list.dataset.titles = JSON.stringify(slides.map(s => s.title || ''));
+  list.dataset.durations = JSON.stringify(slides.map(s => s.minDuration || 12));
+  document.getElementById('intake-step-3').style.display = 'none';
+  document.getElementById('intake-step-4').style.display = '';
+  document.getElementById('script-error').textContent = '';
+}
+
+function modalScriptBack() {
+  document.getElementById('intake-step-4').style.display = 'none';
+  document.getElementById('intake-step-3').style.display = '';
+}
+
+// Step 4 → accept: read all textareas, build scenes, populate presentation
+async function acceptScript() {
+  const list = document.getElementById('script-slides-list');
+  const count = parseInt(list.dataset.count || '0');
+  const titles = JSON.parse(list.dataset.titles || '[]');
+  const durations = JSON.parse(list.dataset.durations || '[]');
+  if (!count) return;
+
+  document.getElementById('intake-step-4').style.display = 'none';
+  document.getElementById('intake-step-5').style.display = '';
+  document.getElementById('building-msg').textContent = 'Populating presentation…';
+
+  const scenes = [];
+  for (let i = 0; i < count; i++) {
+    const audio = document.getElementById(`audio-${i}`)?.value.trim() || '';
+    const visuals = document.getElementById(`visuals-${i}`)?.value.trim() || '';
+    scenes.push({
+      title: titles[i] || `Slide ${i+1}`,
+      narrationHtml: audio,
+      minDuration: durations[i] || 12,
+      visualDescription: visuals
+    });
+  }
+
+  _currentProject.scenes = scenes;
+  _conversation.stage = 'built';
+  await saveProjectToDisk();
+  await saveConversation();
+  renderScenes(scenes);
+  document.getElementById('project-meta').textContent = `${scenes.length} scenes`;
+}
+
+// ── EDIT MODE ──────────────────────────────────────────────────────────
+function toggleEditMode() {
+  _editMode = !_editMode;
+  document.getElementById('btn-edit').style.color = _editMode ? 'var(--green)' : '';
+  document.getElementById('btn-edit').style.borderColor = _editMode ? 'rgba(52,211,153,0.35)' : '';
+}
+
+function editScene(i) {
+  const el = document.getElementById(`narr-${i}`);
+  const saveBtn = document.getElementById(`save-btn-${i}`);
+  el.contentEditable = 'true';
+  el.focus();
+  saveBtn.style.display = 'inline-block';
+  // Move cursor to end
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+async function saveScene(i) {
+  if (!_currentProject) return;
+  const el = document.getElementById(`narr-${i}`);
+  el.contentEditable = 'false';
+  document.getElementById(`save-btn-${i}`).style.display = 'none';
+  _currentProject.scenes[i].narrationHtml = el.innerHTML;
+  _currentProject.scenes[i].authorLocked = true;
+  await saveProjectToDisk();
+}
+
+async function saveProjectToDisk() {
+  if (!_currentProject) return;
+  const slug = _currentProject.slug;
+  const body = JSON.stringify(_currentProject, null, 2);
+  try {
+    await fetch('/save', {
+      method: 'POST',
+      headers: { 'X-Filename': `projects/${slug}/project.json` },
+      body
+    });
+  } catch(e) {
+    console.warn('Save failed:', e);
+  }
+}
+
+// ── NEW PROJECT MODAL ──────────────────────────────────────────────────
+function _nameToSlug(name) {
+  return name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+}
+
+function openNewProjectModal() {
+  document.getElementById('new-project-modal').classList.remove('hidden');
+  document.getElementById('modal-step-1').style.display = '';
+  document.getElementById('modal-step-2').style.display = 'none';
+  document.getElementById('new-project-name').value = '';
+  document.getElementById('slug-preview').textContent = '';
+  document.getElementById('modal-error').textContent = '';
+  setTimeout(() => document.getElementById('new-project-name').focus(), 50);
+  closeProjectDropdown();
+}
+
+function closeNewProjectModal() {
+  document.getElementById('new-project-modal').classList.add('hidden');
+}
+
+function updateSlugPreview() {
+  const name = document.getElementById('new-project-name').value.trim();
+  const slug = _nameToSlug(name);
+  document.getElementById('slug-preview').textContent = slug ? `Folder: ${slug}/` : '';
+}
+
+function modalNext() {
+  const name = document.getElementById('new-project-name').value.trim();
+  if (!name) {
+    document.getElementById('modal-error').textContent = 'Please enter a project name.';
+    return;
+  }
+  const slug = _nameToSlug(name);
+  if (!slug) {
+    document.getElementById('modal-error').textContent = 'Name must contain at least one letter or number.';
+    return;
+  }
+  // Show step 2 with folder path
+  const base = _workspaceDir || 'workspace';
+  const sep = base.includes('/') ? '/' : '\\';
+  const fullPath = `${base}${sep}${slug}${sep}`;
+  document.getElementById('folder-preview').innerHTML =
+    `📁 <strong style="color:var(--text);">${fullPath}</strong><br>` +
+    `&nbsp;&nbsp;&nbsp;├─ project.json<br>` +
+    `&nbsp;&nbsp;&nbsp;├─ audio/<br>` +
+    `&nbsp;&nbsp;&nbsp;├─ svgs/<br>` +
+    `&nbsp;&nbsp;&nbsp;└─ images/`;
+  document.getElementById('modal-error-2').textContent = '';
+  document.getElementById('modal-step-1').style.display = 'none';
+  document.getElementById('modal-step-2').style.display = '';
+}
+
+function modalBack() {
+  document.getElementById('modal-step-1').style.display = '';
+  document.getElementById('modal-step-2').style.display = 'none';
+}
+
+async function createProject() {
+  const name = document.getElementById('new-project-name').value.trim();
+  const btn = document.getElementById('modal-create');
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+
+  try {
+    const resp = await fetch('/api/projects/new', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      document.getElementById('modal-error-2').textContent = data.error || 'Failed to create project.';
+      return;
+    }
+    console.log('Project created at:', data.path);
+    _projects.push(data);
+    closeNewProjectModal();
+    loadProjectView(data);
+  } catch(e) {
+    document.getElementById('modal-error-2').textContent = 'Server error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create folder →';
+  }
+}
+
+// ── USER MENU ──────────────────────────────────────────────────────────
+function toggleUserMenu() {
+  const m = document.getElementById('user-menu');
+  m.classList.toggle('hidden');
+  closeProjectDropdown();
+}
+function closeUserMenu() { document.getElementById('user-menu').classList.add('hidden'); }
+
+// ── AGENT PANEL ────────────────────────────────────────────────────────
+let _agentHistory = [];
+
+function toggleAgent() {
+  const panel = document.getElementById('agent-panel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    document.getElementById('agent-input').focus();
+    closeProjectDropdown();
+    closeUserMenu();
+  }
+}
+
+function _agentBubble(html, isUser) {
+  const msgs = document.getElementById('agent-messages');
+  const wrap = document.createElement('div');
+  if (isUser) {
+    wrap.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:10px;';
+    wrap.innerHTML = `<div style="background:rgba(12,141,233,0.15);border:1px solid rgba(12,141,233,0.25);border-radius:12px 4px 12px 12px;padding:10px 14px;font-size:13px;color:#c8cad0;max-width:280px;">${html}</div>`;
+  } else {
+    wrap.className = 'agent-msg';
+    wrap.style.marginBottom = '10px';
+    wrap.innerHTML = `<div class="agent-msg-avatar">🤖</div><div class="agent-msg-bubble">${html}</div>`;
+  }
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+  return wrap;
+}
+
+function _parseSlides(text) {
+  const match = text.match(/```json\s*([\s\S]*?)```/);
+  if (!match) return null;
+  try { return JSON.parse(match[1]); } catch(e) { return null; }
+}
+
+function _renderSlidePreview(spec) {
+  if (!spec || !spec.slides) return '';
+  const rows = spec.slides.map((s, i) =>
+    `<div style="border-top:1px solid rgba(255,255,255,0.07);padding:6px 0;font-size:12px;">
+      <span style="color:var(--indigo);font-weight:600;">Slide ${i+1}</span>
+      <span style="color:var(--muted);"> — ${s.title}</span>
+      <div style="color:#9ca3af;font-size:11px;margin-top:2px;">${(s.narration||s.narrationHtml||'').slice(0,80)}…</div>
+    </div>`
+  ).join('');
+  const projName = spec.title || 'New Presentation';
+  return `<div style="margin-top:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--indigo);margin-bottom:6px;">📋 ${projName} — ${spec.slides.length} slides</div>
+    ${rows}
+    <button onclick="window._applySlides()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(12,141,233,0.3),rgba(129,140,248,0.3));border:1px solid rgba(129,140,248,0.4);border-radius:6px;color:#a5b4fc;font-size:12px;font-weight:600;padding:8px;cursor:pointer;font-family:inherit;">
+      ✦ Save to current project →
+    </button>
+  </div>`;
+}
+
+let _pendingSlideSpec = null;
+
+window._applySlides = async function() {
+  if (!_pendingSlideSpec) return;
+  if (!_currentProject) {
+    _agentBubble('Create or open a project first, then try again.', false);
+    return;
+  }
+  const spec = _pendingSlideSpec;
+  _currentProject.scenes = spec.slides.map(s => ({
+    title: s.title,
+    narrationHtml: s.narration || s.narrationHtml || '',
+    minDuration: s.minDuration || 12,
+    visualDescription: s.visualDescription || s.layout || ''
+  }));
+  await saveProjectToDisk();
+  renderScenes(_currentProject.scenes);
+  document.getElementById('project-meta').textContent =
+    `${_currentProject.scenes.length} scenes`;
+  _agentBubble(`✦ Saved ${spec.slides.length} scenes to <strong>${_currentProject.name}</strong>`, false);
+};
+
+const AGENT_SYSTEM = `You are the Presentation Agent for slide-studio — a live, collaborative animated slide builder.
+
+When a user asks you to build a presentation, return a JSON block with this structure:
+
+\`\`\`json
+{
+  "title": "Presentation Title",
+  "slides": [
+    {
+      "title": "Slide Title",
+      "narration": "The narration text for this slide. Conversational, under 60 words.",
+      "minDuration": 12,
+      "visualDescription": "What should appear visually: layout, animated elements, images, SVGs."
+    }
+  ]
+}
+\`\`\`
+
+Rules:
+- Always return valid JSON in a \`\`\`json block.
+- 5–10 slides is the sweet spot for most presentations.
+- Keep narration under 60 words per slide. Conversational, first-person or second-person.
+- visualDescription is a note for the developer, not shown to the audience.
+- If the user wants to refine a slide, update only that slide's entry.
+- For non-slide questions, answer normally without JSON.`;
+
+async function sendAgent() {
+  const input = document.getElementById('agent-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  _agentBubble(text.replace(/</g,'&lt;'), true);
+  _agentHistory.push({ role: 'user', content: text });
+  _conversation.messages.push({ role: 'user', content: text });
+
+  const thinking = _agentBubble('<em style="color:var(--muted);">thinking…</em>', false);
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        system: _buildSystemPrompt(),
+        messages: _agentHistory
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+
+    const reply = data.content?.[0]?.text || '(no response)';
+    _agentHistory.push({ role: 'assistant', content: reply });
+    _conversation.messages.push({ role: 'assistant', content: reply });
+    saveConversation();
+
+    const displayText = reply.replace(/```json[\s\S]*?```/g, '').trim();
+    const spec = _parseSlides(reply);
+    if (spec) _pendingSlideSpec = spec;
+
+    const preview = spec ? _renderSlidePreview(spec) : '';
+    thinking.querySelector('.agent-msg-bubble').innerHTML =
+      (displayText ? displayText.replace(/\n/g,'<br>') : '') + preview;
+
+  } catch(e) {
+    thinking.querySelector('.agent-msg-bubble').innerHTML =
+      `<span style="color:var(--red);">Error: ${e.message}</span>`;
+  }
+  document.getElementById('agent-messages').scrollTop = 99999;
+}
+
+// ── CLICK-OUTSIDE CLOSE ────────────────────────────────────────────────
+document.addEventListener('click', e => {
+  if (!document.getElementById('open-project-wrapper').contains(e.target))
+    closeProjectDropdown();
+  if (!document.getElementById('user-chip').contains(e.target) &&
+      !document.getElementById('user-menu').contains(e.target))
+    closeUserMenu();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeNewProjectModal();
+    closeProjectDropdown();
+    closeUserMenu();
+    document.getElementById('agent-panel').classList.remove('open');
+  }
+});
+
+// ── SESSION BRIEFING ───────────────────────────────────────────────────
+async function _deliverBriefing() {
+  const proj = _currentProject;
+  const sceneCount = (proj.scenes || []).length;
+  const lastActive = _conversation.lastActive
+    ? new Date(_conversation.lastActive).toLocaleDateString()
+    : 'previously';
+  const thinking = _agentBubble('<em style="color:var(--muted);">Reading session history…</em>', false);
+
+  const systemPrompt = _buildSystemPrompt();
+  const briefingRequest = `The user has just reopened the project "${proj.name}". Last active: ${lastActive}. The project has ${sceneCount} scenes. Here is the conversation history so far. Give a brief (3-5 sentence) session briefing: what we were building, where it stands, and the most useful next step. Be direct, like a colleague catching up, not a formal report.`;
+
+  // Use last few messages as context to avoid huge token count
+  const recentMessages = _conversation.messages.slice(-10);
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [...recentMessages, { role: 'user', content: briefingRequest }]
+      })
+    });
+    const data = await resp.json();
+    const reply = data.content?.[0]?.text || 'Ready to continue.';
+    thinking.querySelector('.agent-msg-bubble').innerHTML = reply.replace(/\n/g, '<br>');
+  } catch(e) {
+    thinking.querySelector('.agent-msg-bubble').textContent = `Welcome back to ${proj.name}. ${sceneCount} scenes built. Ready to continue.`;
+  }
+}
+
+function _buildSystemPrompt() {
+  return `You are the slide-studio Presentation Agent — a collaborative builder for animated HTML presentations.
+
+You work with the author to build presentations slide by slide: narration, visuals, timing. You behave like Claude Code: direct, focused, no filler. You remember the full project context and pick up exactly where you left off.
+
+When the author describes a slide, you write the spec. When they want to change something, you change exactly that. When they ask for your assessment, you give it honestly.
+${_agentMemory ? '\n## Knowledge Base\n' + _agentMemory : ''}`;
+}
+
+// ── IMAGE PANEL ────────────────────────────────────────────────────────
+let _images = [];
+
+function toggleImagePanel() {
+  const panel = document.getElementById('image-panel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    loadImageList();
+    closeProjectDropdown();
+    closeUserMenu();
+    document.getElementById('agent-panel').classList.remove('open');
+  }
+}
+
+async function loadImageList() {
+  try {
+    const resp = await fetch('/api/project-images');
+    if (!resp.ok) return;
+    _images = await resp.json();
+    renderImageGrid();
+  } catch(e) { /* no images yet is fine */ }
+}
+
+function renderImageGrid() {
+  const grid = document.getElementById('image-grid');
+  const empty = document.getElementById('image-empty');
+  if (!_images || _images.length === 0) {
+    grid.innerHTML = '';
+    grid.appendChild(empty);
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = '';
+  _images.forEach(img => {
+    const div = document.createElement('div');
+    div.className = 'image-thumb';
+    div.title = img.filename;
+    div.innerHTML = `<img src="${img.url}" loading="lazy" /><div class="image-thumb-name">${img.filename}</div>`;
+    div.onclick = () => copyImageUrl(img.url, img.filename);
+    grid.appendChild(div);
+  });
+}
+
+function copyImageUrl(url, filename) {
+  const fullUrl = `http://localhost:8500${url}`;
+  navigator.clipboard.writeText(fullUrl).then(() => {
+    setImageStatus(`Copied URL for ${filename}`);
+  });
+}
+
+function setImageStatus(msg) {
+  const el = document.getElementById('image-upload-status');
+  el.textContent = msg;
+  setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+async function uploadImages(files) {
+  const toUpload = Array.from(files);
+  setImageStatus(`Uploading ${toUpload.length} file${toUpload.length > 1 ? 's' : ''}…`);
+  const uploaded = [];
+  for (const file of toUpload) {
+    try {
+      const resp = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+          'X-Filename': file.name,
+          'Content-Length': file.size,
+        },
+        body: file
+      });
+      const data = await resp.json();
+      if (resp.ok) uploaded.push(data);
+    } catch(e) {
+      console.warn('Upload failed:', file.name, e);
+    }
+  }
+  if (uploaded.length) {
+    _images = [..._images, ...uploaded];
+    renderImageGrid();
+    setImageStatus(`✓ ${uploaded.length} image${uploaded.length > 1 ? 's' : ''} uploaded`);
+  }
+  document.getElementById('image-file-input').value = '';
+}
+
+function handleImageDrop(e) {
+  e.preventDefault();
+  document.getElementById('image-drop-zone').classList.remove('drag-over');
+  const files = e.dataTransfer.files;
+  if (files.length) uploadImages(files);
+}
+
+// ── BOOT ───────────────────────────────────────────────────────────────
+boot();
+</script>
+</body>
+</html>

@@ -39,7 +39,9 @@
       "Bash(ffmpeg -y -i captions.srt captions.ass)",
       "Bash(ffmpeg -y -i presentation.mp4 -vf \"ass=captions.ass\" -c:v h264_mf -b:v 10M -c:a copy presentation_final.mp4)",
       "Bash(ffmpeg -filters)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(\"C:\\\\Users\\\\aaron\\\\Documents\\\\a-i-rons_projects\\\\slide-studio\\\\.gitignore\":*)",
+      "Bash(findstr :8500)"
     ]
   }
 }

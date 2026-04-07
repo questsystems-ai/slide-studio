@@ -1,0 +1,45 @@
+"""
+Seed the dad-pitch project into the slide-studio workspace.
+Run once: python scripts/seed_dad_pitch.py
+"""
+import os, json
+
+WORKSPACE = r'C:\Users\aaron\Documents\slide-studio'
+SLUG = 'dad-pitch'
+PROJ_DIR = os.path.join(WORKSPACE, SLUG)
+
+os.makedirs(os.path.join(PROJ_DIR, 'audio'), exist_ok=True)
+os.makedirs(os.path.join(PROJ_DIR, 'svgs'), exist_ok=True)
+os.makedirs(os.path.join(PROJ_DIR, 'images'), exist_ok=True)
+
+SCENES = [
+  {'title': 'Welcome', 'minDuration': 18, 'narrationHtml': 'Welcome to the workshop. This presentation is a walkthrough of what I\u2019ve been building over the past year, where it stands today, and what it needs to get finished by December. One more thing worth knowing upfront \u2014 this presentation was made using one of the tools it describes. Which is, itself, part of the point.'},
+  {'title': 'Something Has Changed', 'minDuration': 24, 'narrationHtml': 'Something fundamental has changed. Not in a small way \u2014 in the way the printing press changed who could write, and who could be heard. Artificial intelligence has made it possible for one person, working alone, to do the research, the writing, the design, the engineering, and the distribution that used to require a whole team \u2014 or an entire department.'},
+  {'title': 'The Method Is the Product', 'minDuration': 24, 'narrationHtml': 'Here\u2019s the insight that drives everything I\u2019m doing. I didn\u2019t set out to build products. I set out to build a method. And the method\u2026 is the product. Each tool I make becomes part of the toolkit I use to build the next one. Each paper I publish attracts an audience that funds the one after it. That\u2019s not a side project. That\u2019s a compounding system \u2014 and it\u2019s about sixty percent built.'},
+  {'title': 'The Citizen Scientist', 'minDuration': 30, 'narrationHtml': 'There\u2019s an old idea called the citizen scientist \u2014 someone outside the academy, working on real problems, contributing real findings to the world. Darwin was one. Franklin was one. The model is having a renaissance, powered by artificial intelligence. One person. One machine. The freedom to speak plainly, move fast, and work on things that matter \u2014 without institutional overhead, without committee approval, and without asking anyone\u2019s permission.'},
+  {'title': 'The Portfolio', 'minDuration': 57, 'narrationHtml': 'Here\u2019s the portfolio. Eleven projects across three categories. Six software tools: AuthorConsole and paperHTML for human authorship and publishing. The presentation engine you\u2019re watching right now. api-dash for real-time AI spend. A personal marketing agent that runs campaigns without an agency. And session continuity skills that keep the workflow moving. Two businesses: FlyIRL SkyPark and Illustrate-Assist. One patent: PULSE \u2014 Portable Unified Lightweight Scalable Engine, provisional filed March 2026. And two applied research tracks: a multi-agent problem-solving engine, and TRACER \u2014 a bio-inspired memory architecture targeting arXiv. Every tool I build goes into the toolkit. Every paper builds the audience. Every business generates the revenue. These aren\u2019t separate bets. They\u2019re one system.'},
+  {'title': 'Progress', 'minDuration': 14, 'narrationHtml': 'Here\u2019s where each project stands \u2014 as a percentage complete toward a product someone can download, subscribe to, or build on. Across all eleven, the average is sixty-one percent done.'},
+  {'title': 'PULSE', 'minDuration': 40, 'narrationHtml': 'One project sits apart from the rest, and it\u2019s worth a moment of its own. PULSE \u2014 Portable Unified Lightweight Scalable Engine \u2014 is a patent-pending hardware invention: a modular power generator for drones and field equipment, using a pulsed combustion cycle to generate clean DC power in the field. The provisional patent was filed in March of this year. The path to revenue runs through government research grants and technology licensing \u2014 the standard commercial pathways for hard technology. What it adds to the portfolio is credibility of a different kind. Software can be copied. A patent cannot.'},
+  {'title': 'Illustrate-Assist', 'minDuration': 80, 'narrationHtml': 'Let\u2019s look at Illustrate Assist. The user uploads text \u2014 if it\u2019s finished, great. If just an idea, the app uses Claude to collaborate on research and writing to develop your ideas into books, screenplays, and pitches. The app uses a sophisticated multi-model agent-orchestrated process to parse and extract a world bible and auto-generate model-specific prompts, at which point the user works with Claude to refine the characters, and then the cinematic scenes, collaborating with a fully tooled Sonnet agent with memory and project-context, until just the right image is produced. These are then automatically incorporated into publishable flipbooks, audiovisual interactive lookbooks, or project pitches designed for publishing houses or Hollywood executives. The app also generates promotional materials \u2014 and contains access to a project-specific full marketing agent and dashboard tool to manage audience and PR outreach and engagement.'},
+  {'title': 'Two Kinds of Value', 'minDuration': 30, 'narrationHtml': 'There are two kinds of value in this portfolio, and it\u2019s worth understanding both. Some projects make money directly \u2014 monthly subscriptions, technology licensing, and government research grants. Others build an audience first, and the audience is what generates the revenue. That happens through Patreon \u2014 a platform where readers and followers pay a small amount each month to support independent researchers and creators \u2014 and through the natural cross-promotion that happens when one project\u2019s audience discovers another. In the modern creator economy, audience is the asset. Everything else follows.'},
+  {'title': 'The Flywheel', 'minDuration': 33, 'authorLocked': True, 'narrationHtml': 'Here\u2019s how the compounding works in practice. AuthorConsole gets published. Academics and writers find it and follow along. They see the link to the narrated explainer \u2014 made with the presentation engine. They discover the presentation tool. Some become users. They find the A.I. cost tracker. They find the illustration studio. Each project is a door. Every door leads to the others. And the marketing dashboard \u2014 which is itself one of the products \u2014 means I never have to pay an agency to reach any of these audiences. I built the full-stack marketing machine-brain. Together we run the show.'},
+  {'title': 'A New Kind of Business', 'minDuration': 21, 'authorLocked': True, 'narrationHtml': 'What I\u2019m describing is a new kind of business \u2014 one that doesn\u2019t have a clean name yet, but it\u2019s real and it\u2019s working. Not a startup. Not a consulting practice. Not a blog. A vertically integrated one-person operation, where the same person researches, writes, builds, ships, and markets everything.'},
+  {'title': 'The Ask', 'minDuration': 33, 'narrationHtml': 'Here\u2019s the ask. Two thousand dollars a month, for six months. That breaks down simply: twelve hundred and fifty for living expenses, and seven hundred and fifty for A.I. API costs and minor brand promotion. At six months, we re-evaluate together. If revenue has started, we stop. If we\u2019re close and it makes sense to continue, we talk. There\u2019s no open-ended commitment here. Just a focused runway to finish what is already most of the way built. Total for six months: twelve thousand dollars.'},
+  {'title': 'The Roadmap', 'minDuration': 43, 'narrationHtml': 'Here\u2019s the six-month roadmap. April and May: five things ship \u2014 AuthorConsole, the presentation engine, the A.I. Spend Tracker, Console Continuity Skills, and a-i-ron.com. Each one launches publicly, starts building an audience, and feeds the next. June through August: Illustrate-Assist and the Personal Marketing Agent go live, and Patreon revenue starts flowing. September and October: Patreon revenue funds the marketing spend, the first product revenue comes in, and we sit down and look at what\u2019s working. That\u2019s the re-evaluation point. By then, the picture is clear.'},
+  {'title': 'The Close', 'minDuration': 26, 'narrationHtml': 'I\u2019m not asking you to bet on a dream. I\u2019m asking you to fund the last mile of something that is already mostly built \u2014 for a defined period, with a clear check-in point, and a specific number that covers exactly what it needs to cover and nothing more. The moment is real. The tools are working. What I need is the space to finish them \u2014 and someone who believes that\u2019s worth twelve thousand dollars to find out.'},
+]
+
+meta = {
+  'name': 'Dad Pitch',
+  'slug': SLUG,
+  'createdAt': '2026-04-06T00:00:00Z',
+  'scenes': SCENES,
+}
+
+out = os.path.join(PROJ_DIR, 'project.json')
+with open(out, 'w', encoding='utf-8') as f:
+    json.dump(meta, f, indent=2, ensure_ascii=False)
+
+print(f'Created: {PROJ_DIR}')
+print(f'Scenes:  {len(SCENES)}')
+print(f'Written: {out}')
