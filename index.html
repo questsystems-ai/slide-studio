@@ -2484,17 +2484,42 @@ function toggleMute() {
   if (audioMuted && currentAudio) currentAudio.pause();
 }
 
-// Agent Assist
-const AGENT_REPLIES = [
-  "This presentation was built live — a-i-ron described each slide and Claude wrote it.",
-  "The narration is voiced by ElevenLabs (George voice). Word-level timing drives the karaoke captions.",
-  "Every animated SVG was built inline by Claude, no design tools involved.",
-  "The export pipeline uses Playwright headless + ffmpeg to record a YouTube-ready MP4.",
-  "Download the engine from GitHub and bring your own Claude API key to build your own.",
-  "This is the dad pitch — a $12k / 6-month funding ask to finish the AI product portfolio.",
-  "Each slide took about 15–30 minutes of back-and-forth to get right.",
-];
-let _agentReplyIdx = 0;
+// Agent Assist — live Claude connection via /api/claude proxy
+const AGENT_SYSTEM = `You are the Presentation Agent for slide-studio — a live, collaborative animated slide builder.
+
+The presentation is a single HTML file. Slides are HTML \`<div class="layer" id="scene-N">\` elements. The \`SCENES\` JS array drives narration, timing, and audio. Each entry: \`{ narrationHtml: "...", minDuration: N }\`.
+
+When the user asks you to build a presentation or a specific slide:
+1. Think through the content, structure, and visual approach.
+2. Return your response in two parts:
+   - A conversational reply describing what you're building and why.
+   - A JSON block wrapped in \`\`\`json ... \`\`\` containing the slide specs.
+
+Slide spec format:
+\`\`\`json
+{
+  "action": "new_presentation",
+  "title": "Title of presentation",
+  "slides": [
+    {
+      "id": 0,
+      "title": "Slide title",
+      "narration": "Narration text spoken aloud. Plain sentences, no markdown.",
+      "minDuration": 12,
+      "layout": "Brief description of the visual layout and animations for this slide"
+    }
+  ]
+}
+\`\`\`
+
+For the visual layout field, describe what should appear: SVG diagrams, animated elements, text arrangements, color palette. Be specific enough that the layout can be built from the description.
+
+Keep narration conversational and clear — it will be read aloud by a TTS voice. Aim for 10–20 words per second of minDuration. For a 15-second slide, ~180 words is too long; ~150 words is right.
+
+If the user is just chatting or asking questions, respond naturally without a JSON block.`;
+
+let _agentHistory = [];
+
 function openAgent() {
   const panel = document.getElementById('agent-panel');
   if (panel.classList.contains('open')) { closeAgent(); return; }
@@ -2504,28 +2529,177 @@ function openAgent() {
 function closeAgent() {
   document.getElementById('agent-panel').classList.remove('open');
 }
-function sendAgent() {
+
+function _agentBubble(html, isUser) {
+  const msgs = document.getElementById('agent-messages');
+  const wrap = document.createElement('div');
+  if (isUser) {
+    wrap.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:10px;';
+    wrap.innerHTML = `<div style="background:rgba(12,141,233,0.15);border:1px solid rgba(12,141,233,0.25);border-radius:12px 4px 12px 12px;padding:10px 14px;font-size:14px;color:#c8cad0;max-width:300px;">${html}</div>`;
+  } else {
+    wrap.className = 'agent-msg';
+    wrap.style.marginBottom = '10px';
+    wrap.innerHTML = `<div class="agent-msg-avatar">🤖</div><div class="agent-msg-bubble">${html}</div>`;
+  }
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+  return wrap;
+}
+
+function _parseSlides(text) {
+  const match = text.match(/```json\s*([\s\S]*?)```/);
+  if (!match) return null;
+  try { return JSON.parse(match[1]); } catch(e) { return null; }
+}
+
+function _renderSlidePreview(spec) {
+  if (!spec || spec.action !== 'new_presentation') return '';
+  const rows = spec.slides.map((s, i) =>
+    `<div style="border-top:1px solid rgba(255,255,255,0.07);padding:6px 0;font-size:12px;">
+      <span style="color:#818cf8;font-weight:600;">Slide ${i+1}</span>
+      <span style="color:#60646d;"> — ${s.title}</span>
+      <div style="color:#9ca3af;font-size:11px;margin-top:2px;">${s.narration.slice(0,80)}…</div>
+    </div>`
+  ).join('');
+  return `<div style="margin-top:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:#818cf8;margin-bottom:6px;">📋 ${spec.title} — ${spec.slides.length} slides</div>
+    ${rows}
+    <button onclick="window._applySlides()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(12,141,233,0.3),rgba(129,140,248,0.3));border:1px solid rgba(129,140,248,0.4);border-radius:6px;color:#a5b4fc;font-size:12px;font-weight:600;padding:8px;cursor:pointer;">
+      ✦ Save as new presentation →
+    </button>
+  </div>`;
+}
+
+let _pendingSlideSpec = null;
+
+window._applySlides = async function() {
+  if (!_pendingSlideSpec) return;
+  const spec = _pendingSlideSpec;
+  // Build a minimal self-contained HTML presentation from the spec
+  const scenes = spec.slides.map(s => ({
+    minDuration: s.minDuration || 10,
+    narrationHtml: s.narration,
+    layout: s.layout
+  }));
+  const scenesJson = JSON.stringify(scenes, null, 2);
+  const layers = spec.slides.map((s, i) => `
+  <div class="layer" id="scene-${i}">
+    <style>
+      #scene-${i} { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px; text-align:center; }
+      #scene-${i} h2 { font-size:36px; font-weight:700; color:#e2e3e5; margin-bottom:16px; }
+      #scene-${i} .layout-note { font-size:13px; color:#60646d; font-style:italic; max-width:600px; line-height:1.5; margin-top:24px; border:1px solid rgba(255,255,255,0.07); border-radius:6px; padding:12px 16px; background:rgba(255,255,255,0.02); }
+    </style>
+    <h2>${s.title}</h2>
+    <div class="layout-note">🎨 ${s.layout}</div>
+  </div>`).join('\n');
+
+  const filename = spec.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') + '.html';
+  const html = `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<title>${spec.title}</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0b0d; color:#e2e3e5; font-family:'Inter',-apple-system,sans-serif; overflow:hidden; width:100vw; height:100vh; }
+#canvas { width:100vw; height:100vh; position:relative; overflow:hidden; }
+.layer { position:absolute; inset:0; opacity:0; transition:opacity 0.6s ease; pointer-events:none; }
+.layer.active { opacity:1; pointer-events:auto; }
+#narration { position:fixed; bottom:0; left:0; right:0; z-index:100; padding:20px 40px; background:linear-gradient(to top,rgba(0,0,0,0.95) 0%,rgba(0,0,0,0.7) 60%,transparent 100%); min-height:80px; display:flex; align-items:flex-end; }
+#narration-text { font-size:16px; line-height:1.6; color:#c8cad0; max-width:calc(100vw - 80px); }
+#controls { position:fixed; top:16px; right:16px; z-index:200; display:flex; gap:8px; }
+#controls button { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#9ca3af; font-size:12px; padding:6px 14px; border-radius:6px; cursor:pointer; }
+#controls button:hover { background:rgba(255,255,255,0.14); color:#e2e3e5; }
+#scene-counter { position:fixed; bottom:16px; right:20px; z-index:200; font-size:11px; color:#60646d; font-family:monospace; }
+</style>
+</head>
+<body>
+<div id="canvas">
+${layers}
+</div>
+<div id="narration"><div id="narration-text"></div></div>
+<div id="controls">
+  <button onclick="prevScene()">&#9664;</button>
+  <button id="btn-play" onclick="togglePlay()">Play</button>
+  <button onclick="nextScene()">&#9654;</button>
+</div>
+<div id="scene-counter">1 / ${spec.slides.length}</div>
+<script>
+const SCENES = ${scenesJson};
+let currentScene = 0, playing = false;
+function showScene(i) {
+  document.querySelectorAll('.layer').forEach((l,j) => l.classList.toggle('active', j===i));
+  currentScene = i;
+  document.getElementById('narration-text').innerHTML = SCENES[i]?.narrationHtml || '';
+  document.getElementById('scene-counter').textContent = (i+1) + ' / ' + SCENES.length;
+}
+function nextScene() { if (currentScene < SCENES.length-1) showScene(currentScene+1); }
+function prevScene() { if (currentScene > 0) showScene(currentScene-1); }
+function togglePlay() { playing = !playing; document.getElementById('btn-play').textContent = playing ? 'Pause' : 'Play'; if (playing) autoAdvance(); }
+let _advTimer = null;
+function autoAdvance() {
+  if (!playing) return;
+  const dur = (SCENES[currentScene]?.minDuration || 8) * 1000;
+  _advTimer = setTimeout(() => { if (playing && currentScene < SCENES.length-1) { showScene(currentScene+1); autoAdvance(); } else { playing=false; document.getElementById('btn-play').textContent='Play'; } }, dur);
+}
+document.addEventListener('keydown', e => { if(e.key==='ArrowRight') nextScene(); if(e.key==='ArrowLeft') prevScene(); if(e.key===' ') togglePlay(); });
+showScene(0);
+<\/script>
+</body></html>`;
+
+  try {
+    const resp = await fetch('/save', { method:'POST', headers:{'X-Filename': filename}, body: html });
+    const ok = await resp.text();
+    if (ok === 'saved') {
+      _agentBubble(`✦ Saved as <a href="/${filename}" target="_blank" style="color:#38bdf8;">${filename}</a> — click to open`, false);
+    }
+  } catch(e) {
+    _agentBubble('Error saving file: ' + e.message, false);
+  }
+};
+
+async function sendAgent() {
   const input = document.getElementById('agent-input');
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
-  const msgs = document.getElementById('agent-messages');
-  // User bubble
-  const userMsg = document.createElement('div');
-  userMsg.style.cssText = 'display:flex;justify-content:flex-end;';
-  userMsg.innerHTML = `<div style="background:rgba(12,141,233,0.15);border:1px solid rgba(12,141,233,0.25);border-radius:12px 4px 12px 12px;padding:10px 14px;font-size:14px;color:#c8cad0;max-width:300px;">${text.replace(/</g,'&lt;')}</div>`;
-  msgs.appendChild(userMsg);
-  // Agent reply (canned)
-  setTimeout(() => {
-    const reply = AGENT_REPLIES[_agentReplyIdx % AGENT_REPLIES.length];
-    _agentReplyIdx++;
-    const agentMsg = document.createElement('div');
-    agentMsg.className = 'agent-msg';
-    agentMsg.innerHTML = `<div class="agent-msg-avatar">🤖</div><div class="agent-msg-bubble">${reply}</div>`;
-    msgs.appendChild(agentMsg);
-    msgs.scrollTop = msgs.scrollHeight;
-  }, 600);
-  msgs.scrollTop = msgs.scrollHeight;
+
+  _agentBubble(text.replace(/</g,'&lt;'), true);
+  _agentHistory.push({ role: 'user', content: text });
+
+  // Thinking indicator
+  const thinking = _agentBubble('<em style="color:#60646d;">thinking…</em>', false);
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        system: AGENT_SYSTEM,
+        messages: _agentHistory
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+
+    const reply = data.content?.[0]?.text || '(no response)';
+    _agentHistory.push({ role: 'assistant', content: reply });
+
+    // Strip JSON block from display text, show preview separately
+    const displayText = reply.replace(/```json[\s\S]*?```/g, '').trim();
+    const spec = _parseSlides(reply);
+    if (spec) _pendingSlideSpec = spec;
+
+    const preview = spec ? _renderSlidePreview(spec) : '';
+    thinking.querySelector('.agent-msg-bubble').innerHTML =
+      (displayText ? displayText.replace(/\n/g,'<br>') : '') + preview;
+
+  } catch(e) {
+    thinking.querySelector('.agent-msg-bubble').innerHTML =
+      `<span style="color:#f87171;">Error: ${e.message}</span>`;
+  }
+  document.getElementById('agent-messages').scrollTop = 99999;
 }
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('agent-panel').classList.contains('open')) closeAgent();
