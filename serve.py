@@ -156,6 +156,10 @@ class Handler(SimpleHTTPRequestHandler):
             self._handle_list_images()
         elif self.path.startswith('/api/images/'):
             self._handle_serve_image()
+        elif self.path.startswith('/api/elevenlabs-voices'):
+            self._handle_elevenlabs_voices()
+        elif self.path.startswith('/api/screenshot'):
+            self._handle_screenshot()
         else:
             super().do_GET()
 
@@ -407,6 +411,88 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b'saved')
         print(f'  saved {filename}')
+
+    # ── /api/screenshot ────────────────────────────────────────────────────
+    def _handle_screenshot(self):
+        """
+        GET /api/screenshot?url=<url>&slide=<n>&width=1280&height=720
+        Uses Playwright (headless Chromium) to capture a screenshot.
+        Returns JSON: { "path": "<saved file path>", "url": "<served URL>" }
+        Screenshots saved to <workspace>/screenshots/
+        """
+        from urllib.parse import urlparse, parse_qs
+        qs = parse_qs(urlparse(self.path).query)
+        target_url = (qs.get('url', [''])[0]) or 'http://localhost:8500/studio.html'
+        width  = int(qs.get('width',  ['1280'])[0])
+        height = int(qs.get('height', ['720'])[0])
+
+        # Save into workspace/screenshots/ or fallback to app dir
+        base = WORKSPACE_DIR if WORKSPACE_DIR else BASE_DIR
+        out_dir = os.path.join(base, 'screenshots')
+        os.makedirs(out_dir, exist_ok=True)
+        ts = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+        out_path = os.path.join(out_dir, f'screenshot-{ts}.png')
+
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self._json({'error': 'Playwright not installed. Run: pip install playwright && python -m playwright install chromium'})
+            return
+
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page(viewport={'width': width, 'height': height})
+                page.goto(target_url, wait_until='networkidle', timeout=15000)
+                page.screenshot(path=out_path, full_page=False)
+                browser.close()
+            import base64
+            with open(out_path, 'rb') as f:
+                b64 = base64.b64encode(f.read()).decode()
+            print(f'screenshot saved: {out_path}')
+            self._json({'path': out_path, 'filename': os.path.basename(out_path), 'base64': b64})
+        except Exception as e:
+            self._json({'error': str(e)})
+
+    # ── /api/elevenlabs-voices ─────────────────────────────────────────────
+    def _handle_elevenlabs_voices(self):
+        from urllib.parse import urlparse, parse_qs
+        qs = parse_qs(urlparse(self.path).query)
+        gender = (qs.get('gender', [''])[0] or '').lower()  # 'male' | 'female'
+
+        if not ELEVENLABS_KEY:
+            self._json({'voice_id': None, 'name': None, 'error': 'No ELEVENLABS_API_KEY configured'})
+            return
+
+        try:
+            req = urllib.request.Request(
+                'https://api.elevenlabs.io/v1/voices',
+                headers={'xi-api-key': ELEVENLABS_KEY, 'Accept': 'application/json'}
+            )
+            with urllib.request.urlopen(req, timeout=10) as r:
+                data = json.loads(r.read())
+        except Exception as e:
+            self._json({'voice_id': None, 'name': None, 'error': str(e)})
+            return
+
+        voices = data.get('voices', [])
+
+        # Prefer voices whose labels match the requested gender
+        def score(v):
+            labels = {k.lower(): str(val).lower() for k, val in (v.get('labels') or {}).items()}
+            gender_match = labels.get('gender', '') == gender if gender else True
+            # Prefer 'conversational' or 'narration' use_case
+            use = labels.get('use_case', '')
+            use_score = 2 if use in ('narration', 'conversational') else (1 if use else 0)
+            return (int(gender_match) * 10) + use_score
+
+        ranked = sorted(voices, key=score, reverse=True)
+        pick = ranked[0] if ranked else None
+
+        if pick:
+            self._json({'voice_id': pick['voice_id'], 'name': pick['name']})
+        else:
+            self._json({'voice_id': None, 'name': None, 'error': 'No voices found'})
 
     # ── /api/claude ────────────────────────────────────────────────────────
     def _handle_claude(self):
