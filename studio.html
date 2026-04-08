@@ -362,6 +362,139 @@ body {
 .scene-btn:hover { background: rgba(255,255,255,0.09); color: var(--text); }
 .scene-btn.save { border-color: rgba(52,211,153,0.3); color: var(--green); }
 .scene-btn.save:hover { background: rgba(52,211,153,0.1); }
+.scene-btn.preview { border-color: rgba(129,140,248,0.3); color: var(--indigo); }
+.scene-btn.preview:hover { background: rgba(129,140,248,0.1); }
+
+/* ── PREVIEW MODAL ──────────────────────────────────────────────────── */
+#preview-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+#preview-modal.hidden { display: none; }
+#preview-inner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: min(860px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+#preview-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+#preview-slide-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--indigo);
+}
+#preview-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+#preview-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: inherit;
+  transition: color 0.12s;
+}
+#preview-close:hover { color: var(--text); }
+#preview-canvas {
+  background: #070809;
+  aspect-ratio: 16/9;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+#preview-canvas-title {
+  font-size: clamp(18px, 3vw, 32px);
+  font-weight: 700;
+  color: rgba(255,255,255,0.12);
+  letter-spacing: -0.02em;
+  text-align: center;
+  padding: 20px;
+  user-select: none;
+}
+#preview-canvas-badge {
+  position: absolute;
+  top: 14px;
+  left: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(129,140,248,0.5);
+}
+#preview-svg-area {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#preview-narration-area {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.6;
+  color: #9ca3af;
+  max-height: 160px;
+  overflow-y: auto;
+}
+#preview-visual-desc {
+  padding: 8px 24px 14px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--muted);
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+#preview-visual-desc.hidden { display: none; }
+#preview-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+}
+.preview-nav-btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.preview-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.09); }
+.preview-nav-btn:disabled { opacity: 0.3; cursor: default; }
+#preview-counter {
+  font-size: 12px;
+  color: var(--muted);
+}
 
 /* ── INTAKE FLOW ────────────────────────────────────────────────────── */
 #project-intake {
@@ -1103,6 +1236,31 @@ body {
   </div>
 </div>
 
+<!-- ── PREVIEW MODAL ──────────────────────────────────────────────────── -->
+<div id="preview-modal" class="hidden">
+  <div id="preview-inner">
+    <div id="preview-topbar">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <div id="preview-slide-label">SLIDE 1 OF 1</div>
+        <div id="preview-title">Untitled</div>
+      </div>
+      <button id="preview-close" onclick="closePreview()">✕</button>
+    </div>
+    <div id="preview-canvas">
+      <div id="preview-canvas-badge"></div>
+      <div id="preview-svg-area"></div>
+      <div id="preview-canvas-title"></div>
+    </div>
+    <div id="preview-narration-area"></div>
+    <div id="preview-visual-desc" class="hidden"></div>
+    <div id="preview-nav">
+      <button class="preview-nav-btn" id="preview-prev" onclick="previewNav(-1)">← Prev</button>
+      <span id="preview-counter"></span>
+      <button class="preview-nav-btn" id="preview-next" onclick="previewNav(1)">Next →</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── AGENT PANEL ───────────────────────────────────────────────────── -->
 <div id="agent-panel">
   <div id="agent-header">
@@ -1443,6 +1601,7 @@ function renderScenes(scenes) {
         <div class="scene-title">${s.title || 'Untitled'}</div>
         <div class="scene-narration" id="narr-${i}">${s.narrationHtml || s.narration || ''}</div>
         <div class="scene-actions">
+          <button class="scene-btn preview" onclick="previewScene(${i})">Preview</button>
           <button class="scene-btn" onclick="editScene(${i})">Edit narration</button>
           <button class="scene-btn save" id="save-btn-${i}" style="display:none"
                   onclick="saveScene(${i})">Save</button>
@@ -1891,6 +2050,64 @@ function openNewProjectModal() {
 
 function closeNewProjectModal() {
   document.getElementById('new-project-modal').classList.add('hidden');
+}
+
+// ── PREVIEW ─────────────────────────────────────────────────────────────
+let _previewIndex = 0;
+
+function previewScene(i) {
+  _previewIndex = i;
+  _showPreview();
+  document.getElementById('preview-modal').classList.remove('hidden');
+  document.addEventListener('keydown', _previewKeyHandler);
+}
+
+function closePreview() {
+  document.getElementById('preview-modal').classList.add('hidden');
+  document.removeEventListener('keydown', _previewKeyHandler);
+}
+
+function _previewKeyHandler(e) {
+  if (e.key === 'Escape') closePreview();
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') previewNav(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   previewNav(-1);
+}
+
+function previewNav(dir) {
+  const scenes = _currentProject?.scenes || [];
+  _previewIndex = Math.max(0, Math.min(scenes.length - 1, _previewIndex + dir));
+  _showPreview();
+}
+
+function _showPreview() {
+  const scenes = _currentProject?.scenes || [];
+  const s = scenes[_previewIndex];
+  if (!s) return;
+  const total = scenes.length;
+  const num   = _previewIndex + 1;
+
+  document.getElementById('preview-slide-label').textContent = `SLIDE ${num} OF ${total}`;
+  document.getElementById('preview-title').textContent = s.title || 'Untitled';
+  document.getElementById('preview-canvas-badge').textContent = `S${String(num).padStart(2,'0')}`;
+  document.getElementById('preview-canvas-title').textContent = s.title || '';
+  document.getElementById('preview-narration-area').innerHTML = s.narrationHtml || s.narration || '<em style="color:var(--muted)">No narration yet.</em>';
+  document.getElementById('preview-counter').textContent = `${num} / ${total}`;
+
+  // SVG if available
+  const svgArea = document.getElementById('preview-svg-area');
+  svgArea.innerHTML = s.svgHtml || '';
+
+  // Visual description
+  const vd = document.getElementById('preview-visual-desc');
+  if (s.visualDescription) {
+    vd.textContent = '🎨 ' + s.visualDescription;
+    vd.classList.remove('hidden');
+  } else {
+    vd.classList.add('hidden');
+  }
+
+  document.getElementById('preview-prev').disabled = _previewIndex === 0;
+  document.getElementById('preview-next').disabled = _previewIndex === total - 1;
 }
 
 function updateSlugPreview() {
