@@ -635,6 +635,28 @@ body {
   background: #a5b4fc;
 }
 
+/* Tone chips */
+.tone-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tone-chip {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--border); color: var(--muted);
+  background: rgba(255,255,255,0.03); transition: all 0.15s;
+}
+.tone-chip:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+.tone-chip.selected { border-color: rgba(129,140,248,0.6); background: rgba(129,140,248,0.12); color: #a5b4fc; }
+
+/* Voice selector */
+.voice-options { display: flex; gap: 8px; }
+.voice-option {
+  flex: 1; padding: 10px 12px; border-radius: 10px; cursor: pointer; text-align: center;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.03); transition: all 0.15s;
+}
+.voice-option:hover { border-color: rgba(255,255,255,0.2); }
+.voice-option.selected { border-color: rgba(52,211,153,0.5); background: rgba(52,211,153,0.07); }
+.voice-option .voice-label { font-size: 13px; color: var(--text); font-weight: 500; }
+.voice-option .voice-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.voice-option.selected .voice-label { color: #6ee7b7; }
+
 .intake-building {
   display: flex;
   flex-direction: column;
@@ -896,6 +918,68 @@ body {
   color: #c4b5fd;
 }
 
+/* ── CITATION WIDGET (inside agent bubble) ──────────────────────────── */
+.cit-claim-block {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.cit-claim-block:last-of-type { border-bottom: none; }
+.cit-slide-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--indigo);
+  margin-bottom: 4px;
+}
+.cit-quote {
+  font-style: italic;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 7px;
+  line-height: 1.4;
+}
+.cit-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #c8cad0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-bottom: 4px;
+  transition: all 0.1s;
+  font-family: inherit;
+  line-height: 1.4;
+}
+.cit-option:hover { background: rgba(255,255,255,0.09); }
+.cit-option.selected {
+  background: rgba(129,140,248,0.18);
+  border-color: rgba(129,140,248,0.45);
+  color: #c4b5fd;
+}
+.cit-build-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(12,141,233,0.2), rgba(129,140,248,0.2));
+  border: 1px solid rgba(129,140,248,0.3);
+  color: #a5b4fc;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.cit-build-btn:hover {
+  background: linear-gradient(135deg, rgba(12,141,233,0.35), rgba(129,140,248,0.35));
+  color: #c4b5fd;
+}
+
 /* ── IMAGE PANEL ────────────────────────────────────────────────────── */
 #image-panel {
   position: fixed;
@@ -1072,6 +1156,9 @@ body {
 
     <button class="tb-btn" id="btn-edit" onclick="toggleEditMode()">Edit</button>
     <button class="tb-btn" id="btn-images" onclick="toggleImagePanel()">Images</button>
+    <button class="tb-btn" id="btn-screenshot" onclick="takeScreenshot()" title="Screenshot current view">📷</button>
+    <button class="tb-btn" id="btn-factcheck" onclick="factCheckSelection()" title="Fact-check selected text">🔍 Fact Check</button>
+    <button class="tb-btn" id="btn-citations" onclick="findCitations()" title="Find claims needing citations">📚 Citations</button>
     <button class="tb-btn" id="btn-agent-bar" onclick="toggleAgent()">
       <span id="agent-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;vertical-align:middle;"></span>
       Agent Assist
@@ -1130,6 +1217,13 @@ body {
           <div id="scope-proposed-summary"></div>
           <div class="scope-divider">Scope</div>
           <div id="scope-questions-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+          <div style="display:flex;gap:8px;margin-top:4px;">
+            <input id="custom-scope-input" type="text" placeholder="Add your own scope option…"
+              style="flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;
+                     padding:10px 13px;color:var(--text);font-size:13px;outline:none;"
+              onkeydown="if(event.key==='Enter')addCustomScope()" />
+            <button class="intake-btn" onclick="addCustomScope()" style="flex-shrink:0;">+ Add</button>
+          </div>
           <div class="intake-actions">
             <button class="intake-btn" onclick="resetIntake()">← Back</button>
             <button class="intake-btn primary" id="btn-build" onclick="buildPresentation()">Build presentation →</button>
@@ -1156,6 +1250,39 @@ body {
           </div>
           <div id="story-chat-reply" style="font-size:13px;color:#9ca3af;line-height:1.6;min-height:0;display:none;
             background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px 14px;"></div>
+
+          <!-- Tone selector -->
+          <div class="scope-divider">Tone</div>
+          <div class="tone-chips" id="tone-chips">
+            <div class="tone-chip selected" data-tone="Solemn and factual" onclick="selectTone(this)">Solemn / Factual</div>
+            <div class="tone-chip" data-tone="Light and comedic" onclick="selectTone(this)">Light &amp; Comedic</div>
+            <div class="tone-chip" data-tone="Off the wall, stoked, energetic" onclick="selectTone(this)">Off the Wall Stoked</div>
+            <div class="tone-chip" data-tone="90s surfer dude, gnarly, radical" onclick="selectTone(this)">90s Surfer Dude</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <input id="custom-tone-input" type="text" placeholder="Or describe your own tone…"
+              style="flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;
+                     padding:8px 13px;color:var(--text);font-size:13px;outline:none;"
+              oninput="onCustomToneInput(this)" />
+          </div>
+
+          <!-- Voice selector -->
+          <div class="scope-divider">Voice</div>
+          <div class="voice-options" id="voice-options">
+            <div class="voice-option selected" data-voice="standard" onclick="selectVoice(this)">
+              <div class="voice-label">Standard</div>
+              <div class="voice-sub">Text only · no TTS</div>
+            </div>
+            <div class="voice-option" data-voice="male" onclick="selectVoice(this)">
+              <div class="voice-label">Male</div>
+              <div class="voice-sub" id="voice-male-sub">ElevenLabs · auto-select</div>
+            </div>
+            <div class="voice-option" data-voice="female" onclick="selectVoice(this)">
+              <div class="voice-label">Female</div>
+              <div class="voice-sub" id="voice-female-sub">ElevenLabs · auto-select</div>
+            </div>
+          </div>
+
           <div class="intake-actions">
             <button class="intake-btn" onclick="modalStoryBack()">← Back</button>
             <button class="intake-btn" id="btn-assess" onclick="assessStory()"
@@ -1324,6 +1451,9 @@ let _agentMemory = '';
 let _scopeSpec = null;       // pending scope proposal
 let _storySpec = null;       // pending story + slide list
 let _conversation = { messages: [], intent: '', stage: 'new', lastActive: '' };
+let _selectedTone = 'Solemn and factual';
+let _selectedVoice = 'standard';   // 'standard' | 'male' | 'female'
+let _voiceCache = {};              // { male: {voice_id, name}, female: {voice_id, name} }
 
 async function boot() {
   let config;
@@ -1611,6 +1741,52 @@ function renderScenes(scenes) {
   });
 }
 
+// ── TONE + VOICE ────────────────────────────────────────────────────────
+function selectTone(el) {
+  document.querySelectorAll('.tone-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedTone = el.dataset.tone;
+  document.getElementById('custom-tone-input').value = '';
+}
+
+function onCustomToneInput(inp) {
+  const val = inp.value.trim();
+  if (val) {
+    document.querySelectorAll('.tone-chip').forEach(c => c.classList.remove('selected'));
+    _selectedTone = val;
+  } else {
+    // revert to first chip
+    const first = document.querySelector('.tone-chip');
+    if (first) { first.classList.add('selected'); _selectedTone = first.dataset.tone; }
+  }
+}
+
+async function selectVoice(el) {
+  document.querySelectorAll('.voice-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedVoice = el.dataset.voice;
+
+  if (_selectedVoice === 'standard') return;
+
+  // Fetch voice from ElevenLabs if not cached
+  if (_voiceCache[_selectedVoice]) return;
+
+  const subEl = document.getElementById(`voice-${_selectedVoice}-sub`);
+  subEl.textContent = 'Finding voice…';
+  try {
+    const resp = await fetch(`/api/elevenlabs-voices?gender=${_selectedVoice}`);
+    const data = await resp.json();
+    if (data.voice_id) {
+      _voiceCache[_selectedVoice] = { voice_id: data.voice_id, name: data.name };
+      subEl.textContent = data.name;
+    } else {
+      subEl.textContent = data.error || 'Not available';
+    }
+  } catch(e) {
+    subEl.textContent = 'Error fetching voice';
+  }
+}
+
 // ── INTAKE FLOW ────────────────────────────────────────────────────────
 function resetIntake() {
   ['intake-step-1','intake-step-2','intake-step-3','intake-step-4','intake-step-5'].forEach((id,i) => {
@@ -1628,6 +1804,10 @@ async function submitIntent() {
   document.getElementById('btn-scope').disabled = true;
   document.getElementById('btn-scope').textContent = 'Thinking…';
   document.getElementById('intent-error').textContent = '';
+
+  // Save intent immediately so it survives a refresh
+  _conversation.intent = text;
+  saveConversation(_currentProject);
 
   const systemPrompt = `You are a presentation scoping assistant for slide-studio.
 Given a presentation intent, return ONLY a JSON object — no prose, no explanation:
@@ -1698,6 +1878,28 @@ function renderScopeQuestions(spec) {
   document.getElementById('intake-step-2').style.display = '';
 }
 
+function addCustomScope() {
+  const inp = document.getElementById('custom-scope-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  const list = document.getElementById('scope-questions-list');
+  const id = 'custom_' + Date.now();
+  const row = document.createElement('div');
+  row.className = 'scope-toggle-row active';
+  row.dataset.id = id;
+  row.dataset.value = 'true';
+  row.dataset.custom = 'true';
+  row.innerHTML = `<span class="scope-q-text">${text}</span><div class="scope-toggle"></div>`;
+  row.onclick = () => {
+    const on = row.dataset.value !== 'true';
+    row.dataset.value = on ? 'true' : 'false';
+    row.classList.toggle('active', on);
+  };
+  list.appendChild(row);
+  inp.value = '';
+  inp.focus();
+}
+
 function _getScopeAnswers() {
   const answers = {};
   document.querySelectorAll('#scope-questions-list .scope-toggle-row').forEach(row => {
@@ -1707,10 +1909,13 @@ function _getScopeAnswers() {
 }
 
 function _getScopeSummary() {
-  const answers = _getScopeAnswers();
-  return (_scopeSpec?.scope_questions || [])
-    .map(q => `- ${q.question} → ${answers[q.id] ? 'YES' : 'NO'}`)
-    .join('\n');
+  const lines = [];
+  document.querySelectorAll('#scope-questions-list .scope-toggle-row').forEach(row => {
+    const text = row.querySelector('.scope-q-text')?.textContent || row.dataset.id;
+    const val = row.dataset.value === 'true' ? 'YES' : 'NO';
+    lines.push(`- ${text} → ${val}`);
+  });
+  return lines.join('\n');
 }
 
 // After scoping: ask Claude for story paragraph + slide title list
@@ -1888,7 +2093,7 @@ Return ONLY a JSON block:
 }
 \`\`\`
 Rules:
-- audio: spoken narration only. Under 60 words. Conversational.
+- audio: spoken narration only. Under 60 words. Match the tone exactly: ${_selectedTone}.
 - visuals: one paragraph describing what appears on screen. Be specific about layout, animation, color.
 - minDuration: estimate in seconds based on audio length (typically 8–60).
 ${_agentMemory ? '\n## Knowledge Base\n' + _agentMemory : ''}`;
@@ -1914,6 +2119,10 @@ ${_agentMemory ? '\n## Knowledge Base\n' + _agentMemory : ''}`;
 
     _conversation.messages.push({ role: 'user', content: userMsg });
     _conversation.messages.push({ role: 'assistant', content: raw });
+    _conversation.tone = _selectedTone;
+    _conversation.voice = _selectedVoice;
+    _conversation.voiceId = _voiceCache[_selectedVoice]?.voice_id || null;
+    _conversation.voiceName = _voiceCache[_selectedVoice]?.name || null;
     saveConversation();
     renderScriptStep(spec.slides);
   } catch(e) {
@@ -2396,6 +2605,263 @@ ${_agentMemory ? '\n## Knowledge Base\n' + _agentMemory : ''}`;
 
 // ── IMAGE PANEL ────────────────────────────────────────────────────────
 let _images = [];
+
+async function takeScreenshot() {
+  const btn = document.getElementById('btn-screenshot');
+  const orig = btn.textContent;
+  btn.textContent = '⏳';
+  btn.disabled = true;
+
+  // Open agent panel so the response appears there
+  document.getElementById('agent-panel').classList.add('open');
+
+  try {
+    const url = encodeURIComponent(window.location.href);
+    const resp = await fetch(`/api/screenshot?url=${url}&width=1280&height=720`);
+    const data = await resp.json();
+    if (data.error) {
+      _agentBubble(`Screenshot failed: ${data.error}`, false);
+      return;
+    }
+
+    btn.textContent = '✅';
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+
+    // Build a vision message and send to Claude
+    const visionMsg = {
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: data.base64 } },
+        { type: 'text', text: 'I just took a screenshot of what I\'m looking at. Briefly describe what you see on screen (1-2 sentences), then ask me what I want to revise.' }
+      ]
+    };
+    _agentBubble('[screenshot sent]', true);
+    const thinking = _agentBubble('<em style="color:var(--muted);">looking at your screen…</em>', false);
+
+    // Don't push the image into persistent history (too large) — use it only for this call
+    const messages = [..._agentHistory, visionMsg];
+    const apiResp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 512,
+        system: _buildSystemPrompt(),
+        messages
+      })
+    });
+    const apiData = await apiResp.json();
+    if (apiData.error) throw new Error(apiData.error.message || JSON.stringify(apiData.error));
+
+    const reply = apiData.content?.[0]?.text || '(no response)';
+    // Push text-only summary into history so the conversation continues naturally
+    _agentHistory.push({ role: 'user', content: '[user shared a screenshot]' });
+    _agentHistory.push({ role: 'assistant', content: reply });
+    _conversation.messages.push({ role: 'user', content: '[user shared a screenshot]' });
+    _conversation.messages.push({ role: 'assistant', content: reply });
+    saveConversation();
+
+    thinking.querySelector('.agent-msg-bubble').innerHTML = reply.replace(/\n/g, '<br>');
+    document.getElementById('agent-messages').scrollTop = 99999;
+
+  } catch(e) {
+    _agentBubble(`Error: ${e.message}`, false);
+  } finally {
+    btn.disabled = false;
+    if (btn.textContent === '⏳') btn.textContent = orig;
+  }
+}
+
+// ── fact check ───────────────────────────────────────────────────────────────
+async function factCheckSelection() {
+  const sel = window.getSelection().toString().trim();
+  if (!sel) {
+    document.getElementById('agent-panel').classList.add('open');
+    _agentBubble('Select text in the presentation first, then click Fact Check.', false);
+    return;
+  }
+
+  document.getElementById('agent-panel').classList.add('open');
+  _agentBubble(`🔍 Fact-checking: <em>"${sel.slice(0, 120)}${sel.length > 120 ? '…' : ''}"</em>`, true);
+  const thinking = _agentBubble('<em style="color:var(--muted);">checking…</em>', false);
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        system: 'You are a fact-checker for presentation content. Given a claim, verify it in 2-3 sentences. If correct, confirm briefly. If questionable, explain why and suggest a correction. Be direct and cite what you know.',
+        messages: [{ role: 'user', content: `Fact-check this claim: "${sel}"` }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const reply = data.content?.[0]?.text || '(no response)';
+    thinking.querySelector('.agent-msg-bubble').innerHTML = reply.replace(/\n/g, '<br>');
+    _agentHistory.push({ role: 'user', content: `[fact-check request: "${sel.slice(0,80)}"]` });
+    _agentHistory.push({ role: 'assistant', content: reply });
+  } catch(e) {
+    thinking.querySelector('.agent-msg-bubble').innerHTML = `Error: ${e.message}`;
+  }
+  document.getElementById('agent-messages').scrollTop = 99999;
+}
+
+// ── citations ─────────────────────────────────────────────────────────────────
+let _pendingCitations = null; // [{slideIndex, quote, reason, suggestions}]
+
+async function findCitations() {
+  document.getElementById('agent-panel').classList.add('open');
+
+  if (!_currentProject) {
+    _agentBubble('Open a project first — citations scan the presentation narration.', false);
+    return;
+  }
+
+  const scenes = (_currentProject.scenes || []).filter(s => !s.isReferences);
+  const presentationText = scenes.map((s, i) => {
+    const text = (s.narrationHtml || s.narration || '').replace(/<[^>]+>/g, '').trim();
+    return text ? `Slide ${i + 1}: ${text}` : '';
+  }).filter(Boolean).join('\n\n');
+
+  if (!presentationText.trim()) {
+    _agentBubble('No narration text found — build the script first, then run Citations.', false);
+    return;
+  }
+
+  _agentBubble('📚 Scanning for claims that need citations…', true);
+  const thinking = _agentBubble('<em style="color:var(--muted);">analyzing…</em>', false);
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1400,
+        system: 'You are a research editor. Scan presentation slides for claims needing citations — statistics, attributed findings, empirical claims, prior work references. Return ONLY a JSON array (no markdown): [{"slideIndex":0,"quote":"exact phrase from the slide text","reason":"why it needs a citation","suggestions":[{"title":"source title","authors":"Author et al.","year":"YYYY","search":"Google Scholar search terms"}]}]. Use 0-based slideIndex matching the slide numbers in the input. Top 5 gaps max, 2-3 suggestions each.',
+        messages: [{ role: 'user', content: presentationText.slice(0, 5000) }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+
+    const raw = data.content?.[0]?.text || '[]';
+    const match = raw.match(/\[[\s\S]*\]/);
+    const citations = match ? JSON.parse(match[0]) : [];
+
+    if (!citations.length) {
+      thinking.querySelector('.agent-msg-bubble').innerHTML = 'No obvious citation gaps found.';
+      return;
+    }
+
+    _pendingCitations = citations;
+
+    const claimsHtml = citations.map((c, ci) => `
+      <div class="cit-claim-block">
+        <div class="cit-slide-label">SLIDE ${(c.slideIndex ?? ci) + 1}</div>
+        <div class="cit-quote">"${c.quote.slice(0, 110)}${c.quote.length > 110 ? '…' : ''}"</div>
+        ${(c.suggestions || []).map((s, si) => `
+          <button class="cit-option" onclick="toggleCitOption(this)"
+            data-ci="${ci}" data-si="${si}">
+            <span style="color:var(--indigo);font-weight:600;">[${ci+1}.${si+1}]</span>
+            ${s.title}
+            <span style="color:var(--muted);"> — ${s.authors}, ${s.year}</span>
+          </button>
+        `).join('')}
+      </div>
+    `).join('');
+
+    thinking.querySelector('.agent-msg-bubble').innerHTML =
+      `<strong>Found ${citations.length} citation gap${citations.length > 1 ? 's' : ''}</strong> — select sources to include:<br><br>`
+      + claimsHtml
+      + `<button class="cit-build-btn" onclick="buildReferencesSlide()">Build References Slide →</button>`;
+
+    _agentHistory.push({ role: 'user', content: '[citation scan]' });
+    _agentHistory.push({ role: 'assistant', content: `Found ${citations.length} citation gaps. Awaiting source selection.` });
+
+  } catch(e) {
+    thinking.querySelector('.agent-msg-bubble').innerHTML = `Error: ${e.message}`;
+  }
+  document.getElementById('agent-messages').scrollTop = 99999;
+}
+
+function toggleCitOption(btn) {
+  btn.classList.toggle('selected');
+}
+
+async function buildReferencesSlide() {
+  if (!_pendingCitations || !_currentProject) return;
+
+  // Collect selected options
+  const selected = [];
+  document.querySelectorAll('.cit-option.selected').forEach(btn => {
+    const ci = parseInt(btn.dataset.ci);
+    const si = parseInt(btn.dataset.si);
+    const claim = _pendingCitations[ci];
+    if (!claim) return;
+    selected.push({
+      slideIndex: claim.slideIndex ?? ci,
+      suggestion: claim.suggestions[si]
+    });
+  });
+
+  if (!selected.length) {
+    _agentBubble('Select at least one source first, then click Build.', false);
+    return;
+  }
+
+  // Group by slide, deduplicate
+  const bySlide = {};
+  selected.forEach(({ slideIndex, suggestion }) => {
+    if (!bySlide[slideIndex]) bySlide[slideIndex] = [];
+    if (!bySlide[slideIndex].find(r => r.title === suggestion.title)) {
+      bySlide[slideIndex].push(suggestion);
+    }
+  });
+
+  // Build numbered reference list
+  let refNum = 1;
+  const slideLines = []; // "Slide N: [1], [2]"
+  const refEntries = []; // "[1] Author (year). Title."
+
+  Object.keys(bySlide).map(Number).sort((a, b) => a - b).forEach(slideIdx => {
+    const refs = bySlide[slideIdx];
+    const nums = refs.map(() => refNum++);
+    slideLines.push(`Slide ${slideIdx + 1}: ${nums.map(n => `[${n}]`).join(', ')}`);
+    refs.forEach((r, i) => {
+      refEntries.push(`[${nums[i]}] ${r.authors} (${r.year}). ${r.title}.`);
+    });
+  });
+
+  const narrationHtml =
+    `<div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.9em;line-height:1.6">` +
+    `<div style="color:#888;margin-bottom:12px">${slideLines.join(' &nbsp;·&nbsp; ')}</div>` +
+    `<ol style="padding-left:20px">` +
+    refEntries.map(r => `<li style="margin-bottom:6px">${r}</li>`).join('') +
+    `</ol></div>`;
+
+  // Remove any existing refs slide, append new one
+  _currentProject.scenes = (_currentProject.scenes || []).filter(s => !s.isReferences);
+  _currentProject.scenes.push({
+    title: 'References',
+    narration: slideLines.join('\n') + '\n\n' + refEntries.join('\n'),
+    narrationHtml,
+    authorLocked: true,
+    isReferences: true
+  });
+
+  await saveProjectToDisk();
+  renderScenes(_currentProject.scenes);
+
+  _agentBubble(
+    `✦ References slide added — ${refEntries.length} source${refEntries.length > 1 ? 's' : ''} across ${Object.keys(bySlide).length} slide${Object.keys(bySlide).length > 1 ? 's' : ''}. Scroll to the last slide to review.`,
+    false
+  );
+  _pendingCitations = null;
+  document.getElementById('agent-messages').scrollTop = 99999;
+}
 
 function toggleImagePanel() {
   const panel = document.getElementById('image-panel');
