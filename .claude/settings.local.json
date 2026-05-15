@@ -41,7 +41,12 @@
       "Bash(ffmpeg -filters)",
       "Bash(pip install:*)",
       "Bash(\"C:\\\\Users\\\\aaron\\\\Documents\\\\a-i-rons_projects\\\\slide-studio\\\\.gitignore\":*)",
-      "Bash(findstr :8500)"
+      "Bash(findstr :8500)",
+      "Bash(grep -o \"\"text\"\":\"\"[^\"\"]*playwright[^\"\"]*\"\" /c/Users/aaron/.claude/projects/C--Users-aaron-Documents-a-i-rons-projects-romantasy-v1/0223f5c8-e404-4705-87e2-145316ba8c1a.jsonl /c/Users/aaron/.claude/projects/C--Users-aaron-Documents-a-i-rons-projects-romantasy-v1/61b8cd13-632a-46e8-a6ed-6a9317c44816.jsonl)",
+      "Bash(head -20 grep -o \"\"text\"\":\"\"[^\"\"]*capture[^\"\"]*\"\" /c/Users/aaron/.claude/projects/C--Users-aaron-Documents-a-i-rons-projects-romantasy-v1/0223f5c8-e404-4705-87e2-145316ba8c1a.jsonl /c/Users/aaron/.claude/projects/C--Users-aaron-Documents-a-i-rons-projects-romantasy-v1/61b8cd13-632a-46e8-a6ed-6a9317c44816.jsonl)",
+      "Read(//c/Users/aaron/.claude/**)",
+      "Read(//c/Users/aaron/AppData/Roaming/Claude/**)",
+      "Skill(update-config)"
     ]
   }
 }

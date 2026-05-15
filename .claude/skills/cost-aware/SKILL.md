@@ -138,10 +138,26 @@ SAVINGS:                            ~XX%
 
 ---
 
-### Integration with Session Budget
+### Session Budget: Context Volume, Not Message Count
 
-This skill works alongside the session budget protocol:
-- **~25 message cap** still applies — restart fresh to avoid quadratic context cost
+**Message count is a bad proxy for cost.** A 3-message session that reads a large file costs more than 20 messages of strategy discussion. The real driver is **context volume** — how many tokens are in the window at each turn.
+
+**The right trigger to restart: task switching, not message count.**
+
+Each distinct task should be its own session:
+- Build a feature → session 1
+- Write a paper → session 2
+- Fix a bug → session 3
+
+Same work, fraction of the context cost. Context compounds quadratically — every message re-sends the full history.
+
+**Warning signs the context is getting expensive:**
+- You've read several large files (>200 lines each)
+- You've built something substantial (new component, new feature, full paper)
+- The task you're starting now is unrelated to what you just finished
+
+**When you see these signs:** suggest `/compact` or a fresh session before starting the next task.
+
 - **Commit often** — clean git state means next session recovers instantly
 - At session end, print the cost ledger before suggesting a restart
 - The cost ledger helps the user see exactly where their money went

@@ -24,7 +24,17 @@ This file is the crash-recovery signal. If compaction or a context limit interru
 
 ### Step 0: Commit check (do this FIRST)
 
-Run `git status` and `git diff --stat`. If there are uncommitted changes:
+Run `git status` and `git diff --stat`. Check for two things:
+
+**1. Untracked files that were actively worked on this session:**
+
+⚠️ **CRITICAL — flag these immediately.** Untracked files have NO git history. If the session ends without committing them, every edit made this session is unrecoverable. For any untracked file that was created or edited this session, say:
+
+> "⚠️ `<filename>` is untracked — it has no git history. All edits this session are unrecoverable without a commit. Commit it now before we write the handoff."
+
+Suggest: `git add <file> && git commit -m "init: <filename> — <one-line description>"`
+
+**2. Uncommitted changes to tracked files:**
 
 ⚠️ **Stop and tell the user before proceeding.** Uncommitted work forces the next session to spend tokens reconstructing state from diffs instead of reading clean commit history. That exploration costs real money.
 
@@ -86,11 +96,36 @@ Write a **timestamped** handoff file: `scripts/output/session-handoff-YYYYMMDD-H
 2. **Stack** — one line: framework, language, DB, key APIs/services
 3. **Business Context** — one line: who's building it, what stage, what's the goal
 4. **Current State** — today's date, current branch, what just got done this session, what's pending/blocked
+   - **Deployments** — for any web-deployed project touched this session, explicitly record: project name, deploy branch, deploy trigger (e.g. "akushnerphd.me → master branch → Vercel auto-deploy on push"). Future sessions must not have to rediscover this.
 5. **Stopped Mid-Task** — if the session ended before completing something in progress, say so explicitly: what task, what was left, where to pick it up. This is distinct from Pending (backlog) — it's the thing the user would have done next if cost hadn't forced a stop. If nothing was mid-flight, omit this field entirely.
 6. **Key files** — only files the next session will definitely need to touch
 7. **Quick verify** — a shell snippet to confirm the app runs and recent work is intact
 
 Do NOT include: full architecture docs, file trees, API specs, or anything already in CLAUDE.md or memory files. The goal is minimal context that gets a fresh session productive in 30 seconds.
+
+### Step 2.5: Write session index entry (L2 recall layer)
+
+Append a brief entry to `scripts/output/session-index.md` (create if it doesn't exist). This is the fast-search layer for `/recall` — write it to be keyword-rich and scannable, not narrative.
+
+Format:
+```
+## YYYY-MM-DD ~HH:MM · <project/repo name>
+Keywords: <comma-separated topics, decisions, names, acronyms discussed>
+- [one line per significant exchange: topic + outcome/decision]
+- [...]
+```
+
+Example:
+```
+## 2026-05-05 ~14:00 · parent
+Keywords: bi-temporal, recall, TRACER, session-index, memory types, JSONL search
+- bi-temporal convention added to MEMORY.md and CLAUDE.md — append <!-- updated --> on all edits
+- TRACER confirmed not implemented; memory-engine/ has draft paper only
+- recall.py built: L1 (session-index) + L2 (raw JSONL) two-layer search across all projects
+- recall skill added to .claude/skills/recall/SKILL.md
+```
+
+Keep each entry under 15 lines. The file is append-only — never edit past entries.
 
 ### Step 3: Update memory if needed
 
@@ -102,7 +137,13 @@ If the user committed in Step 0, verify with `git status` that the working tree 
 
 ### Step 5: Sign off
 
-Delete the sentinel file: `scripts/output/.terminating`
+Delete the sentinel file and your session state file:
+
+```bash
+rm scripts/output/.terminating
+# Delete your own session state file (the one you wrote during /initiate)
+rm scripts/active-sessions/session-<your-timestamp>.md 2>/dev/null
+```
 
 Output a brief summary:
 ```

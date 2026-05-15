@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Workshop Loop — Aaron Kushner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    background: #fafaf8;
+    color: #1a1a1a;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+    line-height: 1.7;
+  }
+
+  /* ── Header ── */
+  .venue-tag {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: normal;
+    line-height: 1.3;
+    margin-bottom: 10px;
+    color: #111;
+  }
+  .authors {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 6px;
+    font-style: italic;
+  }
+  .authors a { color: #3a6fa8; text-decoration: none; }
+  .meta-line {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 32px;
+  }
+  .meta-line a { color: #3a6fa8; text-decoration: none; }
+
+  hr { border: none; border-top: 1px solid #ddd; margin: 32px 0; }
+
+  /* ── Section labels (ABSTRACT, APPENDIX etc.) ── */
+  .section-label {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 12px;
+  }
+
+  /* ── Numbered section headings ── */
+  h2.section-title {
+    font-family: 'Georgia', serif;
+    font-size: 19px;
+    font-weight: normal;
+    color: #111;
+    margin: 40px 0 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e8e8e2;
+  }
+  h2.section-title .section-num {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #3a6fa8;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+
+  /* ── Subsections ── */
+  h3 {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #333;
+    margin: 28px 0 10px;
+  }
+  h3 .sub-num {
+    color: #3a6fa8;
+    margin-right: 6px;
+  }
+
+  /* ── Body text ── */
+  p { margin-bottom: 16px; font-size: 15.5px; }
+  p:last-child { margin-bottom: 0; }
+
+  /* ── Abstract ── */
+  .abstract {
+    background: #f3f3ef;
+    border-left: 3px solid #3a6fa8;
+    padding: 20px 24px;
+    margin-bottom: 36px;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ── Pull quote ── */
+  .pullquote {
+    margin: 32px 0 36px;
+    padding: 20px 28px;
+    border-left: 4px solid #c8a96e;
+    background: #fdf8f0;
+    font-family: 'Georgia', serif;
+    font-size: 17.5px;
+    font-style: italic;
+    color: #444;
+    line-height: 1.6;
+  }
+
+  /* ── Ordered / unordered lists ── */
+  ol, ul {
+    margin: 0 0 18px 24px;
+    font-size: 15.5px;
+  }
+  li { margin-bottom: 8px; line-height: 1.65; }
+  li strong { color: #1a1a1a; }
+
+  /* ── Code blocks ── */
+  pre {
+    background: #1a1a1c;
+    border: 1px solid #2e2e32;
+    border-radius: 5px;
+    padding: 18px 20px;
+    margin: 18px 0 24px;
+    overflow-x: auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #e8e6e0;
+  }
+  pre .comment { color: #5a8a5a; font-style: italic; }
+
+  /* Code label above block */
+  .code-label {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 4px;
+    margin-top: 20px;
+  }
+
+  /* Inline code */
+  code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13.5px;
+    background: #f0ece4;
+    color: #2a1f0e;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  /* Token colours inside pre blocks */
+  .tok-prop  { color: #7ab0d8; }   /* CSS property / JS keyword */
+  .tok-val   { color: #c8a96e; }   /* values, strings */
+  .tok-sel   { color: #a8d8b0; }   /* selectors */
+  .tok-fn    { color: #d8a8d8; }   /* function names */
+  .tok-num   { color: #e0a060; }   /* numbers */
+  .tok-cmt   { color: #5a8a5a; font-style: italic; } /* comments */
+
+  /* ── Key observation box ── */
+  .observation {
+    background: #fff;
+    border: 1px solid #e0dcd4;
+    border-left: 4px solid #3a6fa8;
+    border-radius: 4px;
+    padding: 18px 22px;
+    margin: 28px 0;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  .observation .obs-label {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #3a6fa8;
+    margin-bottom: 8px;
+  }
+
+  /* ── Appendix ── */
+  .appendix-item {
+    margin-bottom: 36px;
+  }
+  .appendix-item h3 {
+    margin-bottom: 6px;
+  }
+
+  /* ── Colophon ── */
+  .colophon {
+    margin-top: 48px;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 12px;
+    color: #aaa;
+    font-style: italic;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="venue-tag">Working Paper &nbsp;·&nbsp; slide-studio &nbsp;·&nbsp; April 2026</div>
+
+<h1>The Workshop Loop:<br>Building a Living Presentation with Claude</h1>
+
+<div class="authors">
+  Aaron Kushner, Ph.D. &nbsp;·&nbsp;
+  Claude Sonnet 4.6 (Anthropic)
+</div>
+<div class="meta-line">
+  <a href="https://github.com/a-i-ron" target="_blank">github.com/a-i-ron</a>
+  &nbsp;·&nbsp; slide-studio &nbsp;·&nbsp; April 2026
+</div>
+
+<hr>
+
+<div class="section-label">Abstract</div>
+<div class="abstract">
+  <p>We built a broadcast-quality animated pitch deck in three sessions without touching any slide software. The result is a single self-contained HTML file that plays like a film: narrated audio, synchronized word highlighting, animated SVGs, staggered entrance effects, a collapsible slide gallery, and video sequences that wait for their last frame before advancing. This paper documents the method — the architecture decisions, the specific coding patterns, the prompt-and-build loop — and makes a broader observation: code improves not just when you touch it directly, but as a side effect of working on adjacent things.</p>
+</div>
+
+<hr>
+
+<!-- ─────────────── SECTION 1 ─────────────── -->
+<h2 class="section-title"><span class="section-num">§ 1</span>The Problem with Slides</h2>
+
+<p>PowerPoint is optimized for the wrong thing. It is optimized for editing slides. What a solo presenter actually needs is to iterate on <em>ideas</em> — and then have the visual and audio output generated as a consequence.</p>
+
+<p>The friction in slide software is enormous: you wrestle with alignment, fight with font sizes, rebuild layouts from scratch when content changes. None of that is thinking. It is formatting.</p>
+
+<p>The alternative we built: the author narrates intent in plain language, and Claude writes the HTML, CSS, and JavaScript. The author reviews in the browser. If something is wrong, they describe it. Claude fixes it. No drag-and-drop. No format painter. No slide master.</p>
+
+<!-- ─────────────── SECTION 2 ─────────────── -->
+<h2 class="section-title"><span class="section-num">§ 2</span>The Architecture Decision: One File</h2>
+
+<p>The most important decision was: <strong>no build step, no framework, no server dependency</strong>.</p>
+
+<p>The entire presentation is a single <code>.html</code> file. Every slide is a <code>&lt;div class="layer"&gt;</code> with its own <code>&lt;style&gt;</code> block scoped inside it. Audio is loaded from a sibling <code>audio/</code> directory. SVGs are inline. Images are base64 data URIs.</p>
+
+<p>This means:</p>
+<ul>
+  <li>Zero configuration to open it</li>
+  <li>The file <em>is</em> the product — no compilation, no bundling</li>
+  <li>Claude can write and edit it directly with the Read/Edit tools</li>
+  <li>Sharing is a single file copy</li>
+</ul>
+
+<p>The JS engine is ~300 lines: a <code>SCENES</code> array drives everything. Each scene has <code>narrationHtml</code>, <code>minDuration</code>, and an optional <code>authorLocked</code> flag. The <code>showScene()</code> function adds <code>.active</code> to the right layer, which triggers all CSS transitions for that slide. Audio plays via <code>playSceneAudio()</code>, which resolves only when both the audio <em>and</em> <code>minDuration</code> are satisfied — or when the last video in a sequence fires its <code>ended</code> event.</p>
+
+<!-- ─────────────── SECTION 3 ─────────────── -->
+<h2 class="section-title"><span class="section-num">§ 3</span>Case Study: The Progress Bar Slide</h2>
+
+<p>Slide 5 (scene index 5 in the <code>SCENES</code> array, displayed as slide 6) shows eleven projects across three categories — Tools, Businesses, Applied AI Research — each with a horizontal progress bar and a completion percentage.</p>
+
+<h3><span class="sub-num">3.1</span>The Layout</h3>
+
+<p>Three-column CSS grid, one column per category. Each column has a header and a stack of project cards:</p>
+
+<div class="code-label">CSS — grid container</div>
+<pre><code>#projects-scene {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0 32px;
+  padding: 28px 48px 28px;
+}</code></pre>
+
+<p>Each project card (<code>.pcard2</code>) holds an icon, a name, a progress row, and a status label. The progress row is two elements: a track and a fill:</p>
+
+<div class="code-label">HTML — progress row</div>
+<pre><code>&lt;div class="prg-track"&gt;
+  &lt;div class="prg-fill" style="--pct:75%; transition-delay:0.25s"&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="prg-pct"&gt;75%&lt;/div&gt;</code></pre>
+
+<h3><span class="sub-num">3.2</span>The Animation: CSS Custom Properties + Transition</h3>
+
+<p>The fill bar starts at width 0. When the slide becomes active, the JS engine adds <code>.active</code> to the parent <code>.layer</code>. A CSS rule reacts:</p>
+
+<div class="code-label">CSS — activation trigger</div>
+<pre><code>.prg-fill {
+  width: 0;
+  transition: width 0.7s ease;
+}
+.layer.active .prg-fill {
+  width: var(--pct);
+}</code></pre>
+
+<p>The target width is stored as the <code>--pct</code> custom property inline on each element. This means the HTML carries its own data — no JS lookup required at animation time. The transition just reads the property and fills to that width.</p>
+
+<h3><span class="sub-num">3.3</span>The Stagger</h3>
+
+<p>Each bar gets a <code>transition-delay</code> set directly in the <code>style</code> attribute. The delays increase as you move down the list, creating a waterfall effect:</p>
+
+<div class="code-label">HTML — staggered delays</div>
+<pre><code><span class="tok-cmt">&lt;!-- Tools column, staggered 0.1s apart --&gt;</span>
+&lt;div class="prg-fill" style="--pct:100%; transition-delay:0.1s"&gt;&lt;/div&gt;
+&lt;div class="prg-fill" style="--pct:75%;  transition-delay:0.25s"&gt;&lt;/div&gt;
+&lt;div class="prg-fill" style="--pct:75%;  transition-delay:0.4s"&gt;&lt;/div&gt;
+<span class="tok-cmt">&lt;!-- Businesses column, starts at 1.8s (after tools finish) --&gt;</span>
+&lt;div class="prg-fill" style="--pct:30%;  transition-delay:1.8s"&gt;&lt;/div&gt;
+<span class="tok-cmt">&lt;!-- Research column, starts at 3.0s --&gt;</span>
+&lt;div class="prg-fill" style="--pct:15%;  transition-delay:3.0s"&gt;&lt;/div&gt;</code></pre>
+
+<p>The columns animate in sequence — tools fill first, then businesses, then research. Each column's delay starts just after the previous column finishes, giving the eye somewhere to go.</p>
+
+<h3><span class="sub-num">3.4</span>Color Theming by Category</h3>
+
+<p>Each column has a category class. The fill color is set per category:</p>
+
+<div class="code-label">CSS — category colors</div>
+<pre><code>.cat-tools2 .prg-fill { background: linear-gradient(90deg, #0c8de9, #38bdf8); }
+.cat-biz2   .prg-fill { background: linear-gradient(90deg, #c8a96e, #f0d090); }
+.cat-res2   .prg-fill { background: linear-gradient(90deg, #818cf8, #b06be0); }</code></pre>
+
+<p>Blue for software tools. Gold for businesses. Purple for research. The gradient gives each bar a slight 3D feel without any extra markup.</p>
+
+<h3><span class="sub-num">3.5</span>The Narration Calculation</h3>
+
+<p>The original narration said "the average across all seven is about forty-one percent." Both numbers were wrong. In session 3, while fixing an unrelated audio mismatch, we re-read the actual <code>--pct</code> values from the HTML:</p>
+
+<div class="code-label">Arithmetic — re-derived in session</div>
+<pre><code>100 + 75 + 75 + 100 + 65 + 100 + 30 + 80 + 15 + 15 + 15 = 670
+670 ÷ 11 = 61%</code></pre>
+
+<p>The narration was updated to match, audio was regenerated, and the slide became accurate. This is the correction loop in practice: the code is the source of truth, not the narration that was written before the code existed.</p>
+
+<!-- ─────────────── SECTION 4 ─────────────── -->
+<h2 class="section-title"><span class="section-num">§ 4</span>The Improvement Phenomenon</h2>
+
+<p>Here is the observation worth publishing:</p>
+
+<div class="pullquote">
+  Code improves not just when you touch it directly, but as a side effect of working on adjacent things.
+</div>
+
+<p>In three sessions, we built fourteen slides. Each slide has its own style block, its own SVG or layout, its own animation logic. But the slide engine — the JavaScript that runs all of them — improved continuously as a side effect.</p>
+
+<p>When fixing a pause button (session 1), we discovered that CSS animations were not respecting the paused state. The fix: a body class (<code>.anim-paused</code>) that sets <code>animation-play-state: paused</code> globally. That one fix improved every animated slide simultaneously — even slides we had not touched yet.</p>
+
+<p>When fixing the narration progress underline (session 1), we discovered the tick loop was updating <code>--speak-progress</code> even when paused. The fix was one condition: <code>if (playing)</code>. That one line made the underline accurate for every slide.</p>
+
+<p>When fixing the slide counter (session 2), we discovered it used raw array index while the gallery used display-number logic. Unifying them via <code>_displayNum()</code> made the counter correct everywhere.</p>
+
+<p>None of these fixes were the primary task. They were discovered — and fixed — as a consequence of being in the code.</p>
+
+<div class="observation">
+  <div class="obs-label">Why this is different</div>
+  Traditional engineering separates concerns: one person owns the animation engine, another owns the audio layer, another owns the UI. The cost of that separation is that improvements don't propagate — each team member only improves what they own. When a single agent has full context and full write access to a single file, improvements propagate everywhere. The file gets better holistically, not just in the place you're looking.
+</div>
+
+<!-- ─────────────── SECTION 5 ─────────────── -->
+<h2 class="section-title"><span class="section-num">§ 5</span>The Loop, Described</h2>
+
+<p>The method is simple enough to state as a loop:</p>
+
+<ol>
+  <li><strong>Author describes the slide in plain language.</strong> Not "make a bar chart" — more like "show each project as a progress bar, grouped by category, filling in from left to right as the slide opens."</li>
+  <li><strong>Claude writes the HTML, CSS, and JS.</strong> It reads the existing file first to understand the patterns already in use, then writes code that fits.</li>
+  <li><strong>Author reviews in the browser.</strong> Something's off — a label is truncated, a color clashes, the stagger feels mechanical.</li>
+  <li><strong>Author describes the correction.</strong> Claude edits the relevant block.</li>
+  <li><strong>Repeat until it feels right.</strong></li>
+</ol>
+
+<p>The key is that the author never leaves their role. They are always describing, never formatting. The distance between "I want this" and "this exists" is one message.</p>
+
+<!-- ─────────────── SECTION 6 ─────────────── -->
+<h2 class="section-title"><span class="section-num">§ 6</span>What This Implies</h2>
+
+<p>The presentation format itself is changing. PowerPoint was designed for a world where slides were projected to a room. The author made slides, then stood in front of them and spoke.</p>
+
+<p>What we built is something different: the narration and the visuals are synchronized at the word level. The audio drives the timing. The slide waits for the last video frame before advancing. The author's voice is part of the artifact — not a separate performance added on top.</p>
+
+<p>This is closer to film than to slides. And it was built not by a team with a video budget, but by one person and a language model, in a text editor, in three sessions.</p>
+
+<p>The format is available to anyone. The method is replicable. The file is one HTML document.</p>
+
+<p>That is the point.</p>
+
+<hr>
+
+<!-- ─────────────── APPENDIX ─────────────── -->
+<div class="section-label">Appendix — Key Code Patterns</div>
+
+<div class="appendix-item">
+  <h3>Scene activation trigger</h3>
+  <pre><code>function showScene(index) {
+  document.querySelectorAll('.layer').forEach((l, i) => {
+    l.classList.toggle('active', i === index);
+  });
+}</code></pre>
+</div>
+
+<div class="appendix-item">
+  <h3>Audio + minDuration gate</h3>
+  <pre><code>audio.onended = () => {
+  const minDur = SCENES[index]?.minDuration || 5;
+  const elapsed = getSceneElapsed();
+  if (elapsed < minDur) {
+    setTimeout(resolve, (minDur - elapsed) * 1000);
+  } else {
+    resolve();
+  }
+};</code></pre>
+</div>
+
+<div class="appendix-item">
+  <h3>Video sequence with post-roll advance</h3>
+  <pre><code>v3.addEventListener('ended', () => {
+  [v1, v2, v3].forEach(v => { v.currentTime = 0; v.style.opacity = '1'; });
+  setTimeout(() => {
+    if (audioFinishedResolve) { audioFinishedResolve(); audioFinishedResolve = null; }
+  }, 2000);
+}, { once: true });</code></pre>
+</div>
+
+<div class="appendix-item">
+  <h3>Pause-freezing CSS animations</h3>
+  <pre><code>.anim-paused .layer.active * {
+  animation-play-state: paused !important;
+}</code></pre>
+</div>
+
+<div class="appendix-item">
+  <h3>Word-level narration underline</h3>
+  <pre><code><span class="tok-cmt">/* CSS: progress bar drawn via ::after pseudo-element */</span>
+#narration-text::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: var(--speak-progress, 0%);
+  height: 2px;
+  background: #4da6ff;
+  transition: width 0.1s linear;
+}</code></pre>
+  <pre><code><span class="tok-cmt">// JS: only updates when playing — freezes accurately on pause</span>
+if (playing) {
+  document.getElementById('narration-text')
+    .style.setProperty('--speak-progress', `${t * 100}%`);
+}</code></pre>
+</div>
+
+<hr>
+
+<p class="colophon">Written in the same session that built the slides it describes.<br>
+Produced with paperHTML · a-i-ron.com · April 2026</p>
+
+</body>
+</html>
