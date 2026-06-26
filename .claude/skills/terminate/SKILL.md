@@ -103,6 +103,65 @@ Write a **timestamped** handoff file: `scripts/output/session-handoff-YYYYMMDD-H
 
 Do NOT include: full architecture docs, file trees, API specs, or anything already in CLAUDE.md or memory files. The goal is minimal context that gets a fresh session productive in 30 seconds.
 
+### Step 2.3: Capture pre-terminate conversation (deferred-build edge case)
+
+**Trigger:** Run this step if the handoff contains a "Stopped Mid-Task" or "Next session" section — i.e. a build was scoped and agreed upon but deliberately deferred to the next session.
+
+This is the most dangerous information-loss scenario: the architecture decisions, API choices, and scope agreements live only in the conversation, not in any file or commit. The next session's initiate JSONL scan may not recover them reliably if the session was large.
+
+**What to do:** Extract the last 30 user+assistant turns from the *current* session's JSONL (the most recent file — this session, not the prior one) and append them verbatim to the handoff file as a `## Pre-Terminate Conversation` section.
+
+```bash
+# Get the most recent JSONL (this session)
+ls -t /c/Users/aaron/.claude/projects/<project-id>/*.jsonl 2>/dev/null | head -1
+```
+
+Then run (use `py -3` on Windows, `python3` on Mac/Linux):
+
+```bash
+py -3 -c "
+import json, sys
+path = '<most-recent-jsonl>'
+with open(path, 'r', encoding='utf-8', errors='replace') as f:
+    lines = f.readlines()
+turns = []
+for line in lines:
+    try:
+        o = json.loads(line)
+        msg = o.get('message', {})
+        role = msg.get('role', '')
+        content = msg.get('content', '')
+        if isinstance(content, list):
+            content = ' '.join(p.get('text','') for p in content if isinstance(p,dict) and p.get('type')=='text')
+        content = content.strip()
+        # Skip skill/command injections (long boilerplate)
+        if content and role in ('user','assistant') and not content.startswith('Base directory for this skill'):
+            turns.append((role, content))
+    except: pass
+for role, content in turns[-30:]:
+    print(f'[{role}]')
+    print(content[:1200])
+    print()
+" 2>&1
+```
+
+Append the output to the handoff file under:
+
+```markdown
+## Pre-Terminate Conversation
+<!-- last ~30 turns captured at terminate — preserves deferred build scope/decisions -->
+
+[user]
+...
+
+[assistant]
+...
+```
+
+**Why this matters:** When the user says "let's terminate and build this next session," all the architecture decisions (API choices, file structure, UX flow, what was rejected and why) exist only in the conversation. Without this capture, the next session reconstructs from the handoff summary alone and makes wrong assumptions — exactly what happened with the .bat vs .exe / system tray decision in this repo.
+
+**Skip if:** The session ended with work committed and nothing deferred. No point capturing boilerplate tool calls.
+
 ### Step 2.5: Write session index entry (L2 recall layer)
 
 Append a brief entry to `scripts/output/session-index.md` (create if it doesn't exist). This is the fast-search layer for `/recall` — write it to be keyword-rich and scannable, not narrative.
@@ -126,6 +185,37 @@ Keywords: bi-temporal, recall, TRACER, session-index, memory types, JSONL search
 ```
 
 Keep each entry under 15 lines. The file is append-only — never edit past entries.
+
+### Step 2.6: Update cross-repo recent-builds index
+
+Append a one-entry summary of this session's builds to `notes/recent-builds.md`. This file is read by every future initiate (Step 0.2) for cross-repo awareness.
+
+**Path logic:**
+- If running in the **parent repo** (`a-i-rons_projects/`): write to `notes/recent-builds.md`
+- If running in a **sub-repo**: write to `../notes/recent-builds.md`
+
+```bash
+# Detect parent vs sub-repo
+[ -f CLAUDE.md ] && grep -q "a-i-rons_projects — Multi-Repo Parent" CLAUDE.md && TARGET="notes/recent-builds.md" || TARGET="../notes/recent-builds.md"
+echo "Target: $TARGET"
+```
+
+**Format to append** (prepend to top of file, after the header block):
+
+```markdown
+## YYYY-MM-DD — repo-name · topic
+Built: [one sentence: what was created or significantly changed]
+Key files: [2-4 most important files, relative to repo root]
+```
+
+**What to include:**
+- New tools, scripts, skills, features shipped this session
+- Significant refactors or architectural changes
+- Anything the concept-map.md should reference (if so, also update concept-map.md)
+
+**What to skip:** Minor edits, paper text changes, config tweaks, anything already well-covered by the handoff.
+
+**Also update concept-map.md** (`notes/concept-map.md` or `../notes/concept-map.md`) if a new reusable component was built this session that other repos might want to find. Add a row to the table with the concept, repo, what's there, and key file paths.
 
 ### Step 3: Update memory if needed
 

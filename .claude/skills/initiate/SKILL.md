@@ -45,7 +45,25 @@ The compaction summary may have captured some tasks as done — cross-reference 
 
 **If `.last-exchange.md` exists with `Status: completed` or `Status: pending`**, proceed normally — but note: `Status: completed` only means the *committed batch* finished. A subsequent session may have crashed without writing a new commitment. Step 6c (JSONL check) is the backstop for this case.
 
-If neither file exists, proceed normally to Step 0.5.
+If neither file exists, proceed normally to Step 0.2.
+
+### Step 0.2: Load cross-repo intelligence
+
+Read the two cross-repo index files — silently, no output to user:
+
+```bash
+cat notes/recent-builds.md 2>/dev/null
+cat notes/concept-map.md 2>/dev/null
+```
+
+**Purpose:** These are your working memory for what exists across all sub-repos. Before asking the user about prior work or saying "I haven't seen that," check concept-map.md. Before saying a technique wasn't built, check recent-builds.md.
+
+**How to use during the session:**
+- When the user references a concept, tool, or prior build — grep concept-map.md first (`grep -i "<keyword>" notes/concept-map.md`)
+- When the user says "like what we built in X" or "the thing from Y project" — check recent-builds.md for that repo's entry
+- The concept map is the answer to "where does X live?" — use it before asking the user
+
+If the files don't exist yet (first run), proceed silently.
 
 ### Step 0.5: Session state — write yours, read others
 
@@ -401,6 +419,14 @@ curl -s --max-time 2 http://localhost:3737/api/spend > /dev/null 2>&1 && echo "a
 ```
 
 Add `api-dash ✓` or `api-dash launched` to the briefing under **Model**.
+
+**Also start the screenshot daemon** — pre-loads mss + PIL so `/screenshot` is fast (~50ms vs ~800ms cold):
+
+```bash
+curl -s --max-time 1 http://localhost:8601/health > /dev/null 2>&1 && echo "screenshot-daemon ✓" || (python /c/Users/aaron/Documents/a-i-rons_projects/scripts/screenshot_daemon.py & sleep 2 && echo "screenshot-daemon launched on http://localhost:8601")
+```
+
+Add `screenshot-daemon ✓` or `screenshot-daemon launched` to the briefing under **Model**.
 
 ### Step 9: Update your session state file
 
